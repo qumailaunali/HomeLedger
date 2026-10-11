@@ -1,0 +1,126 @@
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id           String     @id @default(cuid())
+  email        String     @unique
+  name         String
+  passwordHash String
+  householdId  String
+  household    Household  @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  @@index([householdId])
+}
+
+model Household {
+  id              String           @id @default(cuid())
+  name            String           @default("My Household")
+  currency        String           @default("PKR")
+  currencySymbol  String           @default("Rs.")
+  startingBalance Float            @default(60950)
+  dateFormat      String           @default("DD MMM YYYY")
+  users           User[]
+  homeCategories  HomeCategory[]
+  shoppingMembers ShoppingMember[]
+  expenses        Expense[]
+  incomes         Income[]
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+}
+
+model HomeCategory {
+  id                    String    @id @default(cuid())
+  householdId           String
+  household             Household @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  name                  String
+  expectedMonthlyAmount Float     @default(0)
+  isActive              Boolean   @default(true)
+  sortOrder             Int       @default(0)
+  icon                  String?
+  expenses              Expense[]
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@index([householdId])
+}
+
+model ShoppingMember {
+  id          String           @id @default(cuid())
+  householdId String
+  household   Household        @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  name        String
+  isActive    Boolean          @default(true)
+  sortOrder   Int              @default(0)
+  budgets     ShoppingBudget[]
+  expenses    Expense[]
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  @@index([householdId])
+}
+
+model ShoppingBudget {
+  id           String         @id @default(cuid())
+  memberId     String
+  member       ShoppingMember @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  year         Int
+  budgetAmount Float          @default(0)
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  @@unique([memberId, year])
+  @@index([memberId])
+}
+
+model Income {
+  id          String    @id @default(cuid())
+  householdId String
+  household   Household @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  amount      Float
+  date        DateTime
+  description String
+  source      String?   @default("House money")
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([householdId, date])
+}
+
+model Expense {
+  id               String          @id @default(cuid())
+  householdId      String
+  household        Household       @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  type             String          // "HOME", "SHOPPING", "OUTING"
+  amount           Float
+  date             DateTime
+  description      String
+  notes            String?
+  
+  // Specific relation fields
+  homeCategoryId   String?
+  homeCategory     HomeCategory?   @relation(fields: [homeCategoryId], references: [id], onDelete: SetNull)
+
+  shoppingMemberId String?
+  shoppingMember   ShoppingMember? @relation(fields: [shoppingMemberId], references: [id], onDelete: SetNull)
+
+  // Outing specific fields
+  place            String?         // Restaurant or venue
+  numberOfPeople   Int?
+  paymentMethod    String?
+
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+
+  @@index([householdId, date])
+  @@index([householdId, type])
+  @@index([shoppingMemberId])
+  @@index([homeCategoryId])
+}
