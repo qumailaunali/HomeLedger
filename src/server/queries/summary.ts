@@ -124,6 +124,21 @@ export async function getMonthlySeries(householdId: string, start: { year: numbe
   return monthlySeries(grouped, start, months);
 }
 
+/** Spending per Home category per month, for a window of months (one grouped query). */
+export async function getCategoryMonthly(householdId: string, start: { year: number; month: number }, months: number) {
+  const end = shiftMonth(start.year, start.month, months);
+  const from = `${start.year}-${String(start.month).padStart(2, "0")}-01`;
+  const to = `${end.year}-${String(end.month).padStart(2, "0")}-01`;
+  const rows = await prisma.$queryRaw<{ categoryId: string; year: number; month: number; total: Prisma.Decimal }[]>`
+    SELECT "homeCategoryId" AS "categoryId", EXTRACT(YEAR FROM date)::int AS year,
+           EXTRACT(MONTH FROM date)::int AS month, SUM(amount) AS total
+      FROM "Expense"
+     WHERE "householdId" = ${householdId} AND type = 'HOME' AND "homeCategoryId" IS NOT NULL
+       AND date >= ${from}::date AND date < ${to}::date
+     GROUP BY 1, 2, 3`;
+  return rows.map((r) => ({ categoryId: r.categoryId, year: r.year, month: r.month, cents: toCents(r.total) }));
+}
+
 async function homeSpendingByCategory(householdId: string, range: DateRange) {
   const rows = await prisma.expense.groupBy({
     by: ["homeCategoryId"],
@@ -170,7 +185,7 @@ export async function getDashboard(household: HouseholdContext, year: number, mo
   const trendStart = shiftMonth(year, month, -5);
   const symbol = household.currencySymbol;
 
-  const [pots, current, previous, trend, home, shopping, recent, largest, outingCount] = await Promise.all([
+  const [pots, current, previous, trend, home, shopping, recent, largest, outingCount, categoryMonthly] = await Promise.all([
     getPotBalances(household),
     getPeriodTotals(household.id, range),
     getPeriodTotals(household.id, monthRange(prev.year, prev.month)),
@@ -187,6 +202,7 @@ export async function getDashboard(household: HouseholdContext, year: number, mo
       pageSize: 5,
     }),
     prisma.expense.count({ where: { householdId: household.id, type: "OUTING", date: range } }),
+    getCategoryMonthly(household.id, trendStart, 6),
   ]);
 
   const warnings = buildWarnings({
@@ -213,6 +229,7 @@ export async function getDashboard(household: HouseholdContext, year: number, mo
     recent,
     largest: largest.rows,
     outingCount,
+    categoryMonthly,
     warnings,
   };
 }

@@ -21,6 +21,7 @@ import { BudgetProgress, EmptyState, Money, SummaryCard } from "@/components/led
 import { MonthSelector } from "@/components/ledger/month-selector";
 import { TransactionList } from "@/components/ledger/transaction-list";
 import { TypeTabs } from "@/components/ledger/type-tabs";
+import { CategoryWatch } from "@/components/ledger/category-watch";
 import { TYPE_META, TypeIcon, primaryLabel } from "@/components/ledger/type-meta";
 import { SpendingTrendChart } from "@/components/charts/charts";
 import type { DashboardData, PeriodTotals } from "@/types";
@@ -140,6 +141,8 @@ export function Dashboard({ data, userName }: { data: DashboardData; userName: s
           )}
         </CardContent>
       </Card>
+
+      <CategoryWatch categories={data.home} monthly={data.categoryMonthly} trend={data.trend} homeTotalCents={data.current.homeCents} />
 
       <SpendingTrendChart data={data.trend} title="Spending overview" description="Last 6 months by type" />
 

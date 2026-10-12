@@ -95,6 +95,8 @@ export interface DashboardData {
   recent: TransactionRow[];
   largest: TransactionRow[];
   outingCount: number;
+  /** Home spending per category per month for the 6-month trend window. */
+  categoryMonthly: { categoryId: string; year: number; month: number; cents: number }[];
   warnings: Warning[];
 }
 
