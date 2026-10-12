@@ -1,6 +1,8 @@
 import "server-only";
 import { Prisma } from "@prisma/client";
+import { unstable_cache } from "next/cache";
 import { prisma } from "../db";
+import { ledgerTag, settingsTag } from "../cache";
 import type { HouseholdContext } from "../auth";
 import { formatMoney, toCents, type Cents } from "@/lib/money";
 import {
@@ -8,6 +10,7 @@ import {
   isoRange,
   monthRange,
   shiftMonth,
+  toIsoDate,
   yearRange,
   type IsoDate,
 } from "@/lib/dates";
@@ -24,19 +27,32 @@ import {
   type PeriodTotals,
 } from "@/lib/calculations";
 import { getLedgerPage, getRecentTransactions } from "./ledger";
-import type { CategoryOption, DashboardData, MemberOption } from "@/types";
+import type { CategoryOption, DashboardData, MemberOption, TransactionRow } from "@/types";
 
 type DateRange = { gte: Date; lt: Date };
 
 /** Averages are shown in whole rupees. */
 const wholeRupees = (cents: number) => Math.round(cents / 100) * 100;
 
-export async function getBalanceCents(household: HouseholdContext): Promise<Cents> {
-  const [received, spent] = await Promise.all([
-    prisma.income.aggregate({ where: { householdId: household.id }, _sum: { amount: true } }),
-    prisma.expense.aggregate({ where: { householdId: household.id }, _sum: { amount: true } }),
-  ]);
-  return computeBalance(household.startingBalanceCents, toCents(received._sum.amount), toCents(spent._sum.amount));
+/**
+ * Household balance. Cached per household — only changes on ledger writes,
+ * which invalidate the ledger tag. This runs on every page navigation via the
+ * (app) layout, so caching it eliminates 2 full-table aggregates per page.
+ */
+export function getBalanceCents(household: HouseholdContext): Promise<Cents> {
+  const householdId = household.id;
+  const startingBalanceCents = household.startingBalanceCents;
+  return unstable_cache(
+    async () => {
+      const [received, spent] = await Promise.all([
+        prisma.income.aggregate({ where: { householdId }, _sum: { amount: true } }),
+        prisma.expense.aggregate({ where: { householdId }, _sum: { amount: true } }),
+      ]);
+      return computeBalance(startingBalanceCents, toCents(received._sum.amount), toCents(spent._sum.amount));
+    },
+    ["balance", householdId],
+    { tags: [ledgerTag(householdId)] },
+  )();
 }
 
 export async function getActiveCategories(householdId: string): Promise<CategoryOption[]> {
@@ -68,21 +84,28 @@ export interface PotBalances {
 
 /**
  * Money pots: each pot's balance = money added to that pot − that type's
- * expenses (all time). The total is the household balance, so the pots plus
- * the general amount always add up to it.
+ * expenses (all time). Cached per household — only changes on ledger writes.
  */
-export async function getPotBalances(household: HouseholdContext): Promise<PotBalances> {
-  const [received, spent] = await Promise.all([
-    prisma.income.groupBy({ by: ["pot"], where: { householdId: household.id }, _sum: { amount: true } }),
-    prisma.expense.groupBy({ by: ["type"], where: { householdId: household.id }, _sum: { amount: true } }),
-  ]);
-  const into = (pot: ExpenseTypeKey | null) => toCents(received.find((r) => r.pot === pot)?._sum.amount);
-  const out = (type: ExpenseTypeKey) => toCents(spent.find((r) => r.type === type)?._sum.amount);
-  const HOME = into("HOME") - out("HOME");
-  const OUTING = into("OUTING") - out("OUTING");
-  const SHOPPING = into("SHOPPING") - out("SHOPPING");
-  const generalCents = household.startingBalanceCents + into(null);
-  return { HOME, OUTING, SHOPPING, generalCents, totalCents: generalCents + HOME + OUTING + SHOPPING };
+export function getPotBalances(household: HouseholdContext): Promise<PotBalances> {
+  const householdId = household.id;
+  const startingBalanceCents = household.startingBalanceCents;
+  return unstable_cache(
+    async () => {
+      const [received, spent] = await Promise.all([
+        prisma.income.groupBy({ by: ["pot"], where: { householdId }, _sum: { amount: true } }),
+        prisma.expense.groupBy({ by: ["type"], where: { householdId }, _sum: { amount: true } }),
+      ]);
+      const into = (pot: ExpenseTypeKey | null) => toCents(received.find((r) => r.pot === pot)?._sum.amount);
+      const out = (type: ExpenseTypeKey) => toCents(spent.find((r) => r.type === type)?._sum.amount);
+      const HOME = into("HOME") - out("HOME");
+      const OUTING = into("OUTING") - out("OUTING");
+      const SHOPPING = into("SHOPPING") - out("SHOPPING");
+      const generalCents = startingBalanceCents + into(null);
+      return { HOME, OUTING, SHOPPING, generalCents, totalCents: generalCents + HOME + OUTING + SHOPPING };
+    },
+    ["pots", householdId],
+    { tags: [ledgerTag(householdId)] },
+  )();
 }
 
 /** Totals by expense type plus money received, for any date range. */
@@ -161,49 +184,80 @@ async function shoppingSpendingByMember(householdId: string, year: number) {
   return new Map(rows.filter((r) => r.shoppingMemberId).map((r) => [r.shoppingMemberId!, toCents(r._sum.amount)]));
 }
 
-/** Expected-vs-actual for each active Home category in one month. */
-export async function getHomeBudget(householdId: string, year: number, month: number) {
-  const [categories, spent] = await Promise.all([
-    getActiveCategories(householdId),
-    homeSpendingByCategory(householdId, monthRange(year, month)),
-  ]);
-  const lines = homeProgress(categories, spent);
-  return { lines, totals: totalsOf(lines) };
+/** Expected-vs-actual for each active Home category in one month. Cached per household+month. */
+export function getHomeBudget(householdId: string, year: number, month: number) {
+  return unstable_cache(
+    async () => {
+      const [categories, spent] = await Promise.all([
+        getActiveCategories(householdId),
+        homeSpendingByCategory(householdId, monthRange(year, month)),
+      ]);
+      const lines = homeProgress(categories, spent);
+      return { lines, totals: totalsOf(lines) };
+    },
+    ["home-budget", householdId, String(year), String(month)],
+    { tags: [ledgerTag(householdId), settingsTag(householdId)] },
+  )();
 }
 
-/** Yearly budget vs spent for each active shopping member, using that year's budget. */
-export async function getShoppingBudget(householdId: string, year: number) {
-  const [members, spent] = await Promise.all([
-    getActiveMembers(householdId, year),
-    shoppingSpendingByMember(householdId, year),
-  ]);
-  const budgets = new Map(members.map((m) => [m.id, m.budgetCents]));
-  const lines = shoppingProgress(members, budgets, spent);
-  return { lines, totals: totalsOf(lines) };
+/** Yearly budget vs spent for each active shopping member. Cached per household+year. */
+export function getShoppingBudget(householdId: string, year: number) {
+  return unstable_cache(
+    async () => {
+      const [members, spent] = await Promise.all([
+        getActiveMembers(householdId, year),
+        shoppingSpendingByMember(householdId, year),
+      ]);
+      const budgets = new Map(members.map((m) => [m.id, m.budgetCents]));
+      const lines = shoppingProgress(members, budgets, spent);
+      return { lines, totals: totalsOf(lines) };
+    },
+    ["shopping-budget", householdId, String(year)],
+    { tags: [ledgerTag(householdId), settingsTag(householdId)] },
+  )();
 }
 
-export async function getDashboard(household: HouseholdContext, year: number, month: number): Promise<DashboardData> {
+/**
+ * Full dashboard data. Cached per household+month — invalidated by the ledger
+ * and settings tags. The dashboard is the heaviest page (~10 parallel queries
+ * including all-time aggregates), so caching it is the single biggest win.
+ */
+export function getDashboard(
+  household: HouseholdContext,
+  year: number,
+  month: number,
+): Promise<DashboardData> {
+  const householdId = household.id;
+  const currencySymbol = household.currencySymbol;
+  const startingBalanceCents = household.startingBalanceCents;
+  return unstable_cache(
+    () => computeDashboard({ id: householdId, currencySymbol, startingBalanceCents }, year, month),
+    ["dashboard", householdId, String(year), String(month)],
+    { tags: [ledgerTag(householdId), settingsTag(householdId)] },
+  )();
+}
+
+async function computeDashboard(
+  household: { id: string; currencySymbol: string; startingBalanceCents: number },
+  year: number,
+  month: number,
+): Promise<DashboardData> {
   const prev = shiftMonth(year, month, -1);
   const range = monthRange(year, month);
   const trendStart = shiftMonth(year, month, -5);
   const symbol = household.currencySymbol;
+  // getPotBalances/getRecentTransactions only need id + startingBalanceCents.
+  const ctx = { id: household.id, startingBalanceCents: household.startingBalanceCents } as HouseholdContext;
 
   const [pots, current, previous, trend, home, shopping, recent, largest, outingCount, categoryMonthly] = await Promise.all([
-    getPotBalances(household),
+    getPotBalances(ctx),
     getPeriodTotals(household.id, range),
     getPeriodTotals(household.id, monthRange(prev.year, prev.month)),
     getMonthlySeries(household.id, trendStart, 6),
     getHomeBudget(household.id, year, month),
     getShoppingBudget(household.id, year),
-    getRecentTransactions(household, 8),
-    getLedgerPage(household, {
-      type: "EXPENSES",
-      from: isoOf(range.gte),
-      to: lastDayIso(year, month),
-      sort: "amount",
-      dir: "desc",
-      pageSize: 5,
-    }),
+    getRecentTransactions(ctx, 8),
+    getLargestExpenses(household.id, range, 5),
     prisma.expense.count({ where: { householdId: household.id, type: "OUTING", date: range } }),
     getCategoryMonthly(household.id, trendStart, 6),
   ]);
@@ -230,7 +284,7 @@ export async function getDashboard(household: HouseholdContext, year: number, mo
     shopping: shopping.lines,
     shoppingTotals: shopping.totals,
     recent,
-    largest: largest.rows,
+    largest,
     outingCount,
     categoryMonthly,
     warnings,
@@ -296,7 +350,7 @@ export async function getAnalytics(household: HouseholdContext, from: IsoDate, t
   const months = (ty - fy) * 12 + (tm - fm) + 1;
   const hid = household.id;
 
-  const [totals, series, homeByCat, categories, largest, outingAgg, outingLargest] = await Promise.all([
+  const [totals, series, homeByCat, categories, largest, outingAgg, outingLargest, homeMonthly] = await Promise.all([
     getPeriodTotals(hid, range),
     getMonthlySeries(hid, { year: fy, month: fm }, months),
     homeSpendingByCategory(hid, range),
@@ -305,23 +359,22 @@ export async function getAnalytics(household: HouseholdContext, from: IsoDate, t
       select: { id: true, name: true, expectedMonthlyAmount: true, isActive: true },
       orderBy: { sortOrder: "asc" },
     }),
-    getLedgerPage(household, { type: "EXPENSES", from, to, sort: "amount", dir: "desc", pageSize: 1 }),
+    getLargestExpenses(hid, range, 1),
     prisma.expense.aggregate({ where: { householdId: hid, type: "OUTING", date: range }, _sum: { amount: true }, _count: true }),
     prisma.expense.findFirst({
       where: { householdId: hid, type: "OUTING", date: range },
       orderBy: [{ amount: "desc" }],
       select: { place: true, amount: true, date: true },
     }),
+    // Per-month Home spending by category, to count months over the expected amount.
+    prisma.$queryRaw<{ categoryId: string; year: number; month: number; total: Prisma.Decimal }[]>`
+      SELECT "homeCategoryId" AS "categoryId", EXTRACT(YEAR FROM date)::int AS year,
+             EXTRACT(MONTH FROM date)::int AS month, SUM(amount) AS total
+        FROM "Expense"
+       WHERE "householdId" = ${hid} AND type = 'HOME' AND "homeCategoryId" IS NOT NULL
+         AND date >= ${from}::date AND date <= ${to}::date
+       GROUP BY 1, 2, 3`,
   ]);
-
-  // Per-month Home spending by category, to count months over the expected amount.
-  const homeMonthly = await prisma.$queryRaw<{ categoryId: string; year: number; month: number; total: Prisma.Decimal }[]>`
-    SELECT "homeCategoryId" AS "categoryId", EXTRACT(YEAR FROM date)::int AS year,
-           EXTRACT(MONTH FROM date)::int AS month, SUM(amount) AS total
-      FROM "Expense"
-     WHERE "householdId" = ${hid} AND type = 'HOME' AND "homeCategoryId" IS NOT NULL
-       AND date >= ${from}::date AND date <= ${to}::date
-     GROUP BY 1, 2, 3`;
 
   const homeCategories = categories
     .map((c) => {
@@ -355,7 +408,7 @@ export async function getAnalytics(household: HouseholdContext, from: IsoDate, t
     series,
     averageMonthlyCents: activeMonths.length ? wholeRupees(totals.spentCents / activeMonths.length) : 0,
     highestMonth: highest ? { label: `${MONTH_NAMES[highest.month - 1]} ${highest.year}`, cents: highest.spentCents } : null,
-    largestExpense: largest.rows[0] ?? null,
+    largestExpense: largest[0] ?? null,
     homeCategories: homeCategories.sort((a, b) => b.spentCents - a.spentCents),
     outing: {
       totalCents: toCents(outingAgg._sum.amount),
@@ -386,3 +439,60 @@ export async function getYearSummary(householdId: string, year: number) {
 }
 
 export type YearSummary = Awaited<ReturnType<typeof getYearSummary>>;
+
+/**
+ * Largest expenses in a date range — a plain indexed top-N query.
+ * Replaces the full-history ledger CTE previously used for this widget;
+ * the widget never displays running balances, so the window functions were
+ * pure overhead (full-table scan for 5 rows).
+ */
+export async function getLargestExpenses(
+  householdId: string,
+  range: DateRange,
+  take: number,
+): Promise<TransactionRow[]> {
+  const rows = await prisma.expense.findMany({
+    where: { householdId, date: range },
+    orderBy: [{ amount: "desc" }, { date: "desc" }],
+    take,
+    select: {
+      id: true,
+      type: true,
+      amount: true,
+      date: true,
+      description: true,
+      notes: true,
+      place: true,
+      numberOfPeople: true,
+      paymentMethod: true,
+      homeCategoryId: true,
+      homeCategory: { select: { name: true } },
+      shoppingMemberId: true,
+      shoppingMember: { select: { name: true } },
+      createdAt: true,
+      updatedAt: true,
+    },
+  });
+  return rows.map((r) => ({
+    id: r.id,
+    kind: "EXPENSE" as const,
+    type: r.type,
+    amountCents: toCents(r.amount),
+    date: toIsoDate(r.date),
+    description: r.description,
+    notes: r.notes,
+    place: r.place,
+    numberOfPeople: r.numberOfPeople,
+    paymentMethod: r.paymentMethod,
+    source: null,
+    pot: null,
+    homeCategoryId: r.homeCategoryId,
+    categoryName: r.homeCategory?.name ?? null,
+    shoppingMemberId: r.shoppingMemberId,
+    memberName: r.shoppingMember?.name ?? null,
+    balanceCents: 0,
+    budgetRemainingCents: null,
+    createdAt: r.createdAt.toISOString(),
+    updatedAt: r.updatedAt.toISOString(),
+  }));
+}

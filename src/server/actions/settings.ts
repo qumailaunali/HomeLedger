@@ -1,7 +1,7 @@
 "use server";
 
 import { prisma } from "../db";
-import { authedAction, revalidateLedger, UserError, type ActionResult } from "../action";
+import { authedAction, revalidateLedger, revalidateSettings, UserError, type ActionResult } from "../action";
 import {
   budgetSchema,
   categorySchema,
@@ -29,7 +29,7 @@ export async function updateGeneralSettings(raw: GeneralSettingsInput): Promise<
         timezone: input.timezone,
       },
     });
-    revalidateLedger();
+    revalidateSettings(householdId);
     return null;
   });
 }
@@ -62,7 +62,7 @@ export async function saveCategory(id: string | null, raw: CategoryInput): Promi
         },
       });
     }
-    revalidateLedger();
+    revalidateSettings(householdId);
     return null;
   });
 }
@@ -71,7 +71,7 @@ export async function setCategoryActive(id: string, isActive: boolean): Promise<
   return authedAction("Could not update the category.", async ({ householdId }) => {
     const res = await prisma.homeCategory.updateMany({ where: { id, householdId }, data: { isActive } });
     if (!res.count) throw new UserError("This category no longer exists.");
-    revalidateLedger();
+    revalidateSettings(householdId);
     return null;
   });
 }
@@ -86,7 +86,7 @@ export async function deleteCategory(id: string): Promise<ActionResult> {
     }
     const res = await prisma.homeCategory.deleteMany({ where: { id, householdId } });
     if (!res.count) throw new UserError("This category was already deleted.");
-    revalidateLedger();
+    revalidateSettings(householdId);
     return null;
   });
 }
@@ -97,7 +97,7 @@ export async function reorderCategories(ids: string[]): Promise<ActionResult> {
     await prisma.$transaction(
       ids.map((id, index) => prisma.homeCategory.updateMany({ where: { id, householdId }, data: { sortOrder: index + 1 } })),
     );
-    revalidateLedger();
+    revalidateSettings(householdId);
     return null;
   });
 }
@@ -129,7 +129,7 @@ export async function saveMember(
         await prisma.shoppingBudget.create({ data: { memberId: member.id, year: b.year, budgetAmount: money(b.amount) } });
       }
     }
-    revalidateLedger();
+    revalidateSettings(householdId);
     return null;
   });
 }
@@ -138,7 +138,7 @@ export async function setMemberActive(id: string, isActive: boolean): Promise<Ac
   return authedAction("Could not update the member.", async ({ householdId }) => {
     const res = await prisma.shoppingMember.updateMany({ where: { id, householdId }, data: { isActive } });
     if (!res.count) throw new UserError("This member no longer exists.");
-    revalidateLedger();
+    revalidateSettings(householdId);
     return null;
   });
 }
@@ -153,7 +153,7 @@ export async function deleteMember(id: string): Promise<ActionResult> {
     }
     const res = await prisma.shoppingMember.deleteMany({ where: { id, householdId } });
     if (!res.count) throw new UserError("This member was already removed.");
-    revalidateLedger();
+    revalidateSettings(householdId);
     return null;
   });
 }
@@ -163,7 +163,7 @@ export async function reorderMembers(ids: string[]): Promise<ActionResult> {
     await prisma.$transaction(
       ids.map((id, index) => prisma.shoppingMember.updateMany({ where: { id, householdId }, data: { sortOrder: index + 1 } })),
     );
-    revalidateLedger();
+    revalidateSettings(householdId);
     return null;
   });
 }
@@ -179,7 +179,7 @@ export async function setYearlyBudget(raw: BudgetInput): Promise<ActionResult> {
       update: { budgetAmount: money(input.amount) },
       create: { memberId: member.id, year: input.year, budgetAmount: money(input.amount) },
     });
-    revalidateLedger();
+    revalidateSettings(householdId);
     return null;
   });
 }
@@ -189,7 +189,7 @@ export async function deleteYearlyBudget(memberId: string, year: number): Promis
     const member = await prisma.shoppingMember.findFirst({ where: { id: memberId, householdId }, select: { id: true } });
     if (!member) throw new UserError("This member no longer exists.");
     await prisma.shoppingBudget.deleteMany({ where: { memberId, year } });
-    revalidateLedger();
+    revalidateSettings(householdId);
     return null;
   });
 }
@@ -205,7 +205,7 @@ export async function copyBudgets(fromYear: number, toYear: number): Promise<Act
       data: source.map((b) => ({ memberId: b.memberId, year: toYear, budgetAmount: b.budgetAmount })),
       skipDuplicates: true,
     });
-    revalidateLedger();
+    revalidateSettings(householdId);
     return { copied: result.count };
   });
 }

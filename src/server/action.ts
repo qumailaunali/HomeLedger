@@ -1,8 +1,9 @@
 import "server-only";
-import { revalidatePath } from "next/cache";
+import { updateTag } from "next/cache";
 import { unstable_rethrow } from "next/navigation";
 import { z } from "zod";
 import { getCurrentUser } from "./auth";
+import { ledgerTag, settingsTag } from "./cache";
 import { firstIssue } from "@/lib/validation";
 
 export type ActionResult<T = null> =
@@ -47,7 +48,17 @@ export async function authedAction<T>(
   }
 }
 
-/** Refreshes every page that shows totals, after any change to the ledger. */
-export function revalidateLedger() {
-  revalidatePath("/", "layout");
+/**
+ * Refreshes cached data after a change to the ledger (income/expense writes).
+ * Uses targeted cache tags instead of revalidating the whole app subtree.
+ */
+export function revalidateLedger(householdId: string) {
+  updateTag(ledgerTag(householdId));
+}
+
+/** Refreshes cached data after a settings change (categories, members, budgets). */
+export function revalidateSettings(householdId: string) {
+  updateTag(settingsTag(householdId));
+  // Settings changes can affect budget displays derived from the ledger too.
+  updateTag(ledgerTag(householdId));
 }

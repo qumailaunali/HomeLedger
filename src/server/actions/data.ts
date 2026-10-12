@@ -134,7 +134,7 @@ export async function commitImport(
         place: type === "OUTING" ? r.targetName : null,
       })),
     });
-    revalidateLedger();
+    revalidateLedger(householdId);
     return { imported: valid.length, skipped: checked.length - valid.length };
   });
 }
@@ -264,7 +264,7 @@ export async function restoreBackup(json: string): Promise<ActionResult> {
       },
       { timeout: 60_000 },
     );
-    revalidateLedger();
+    revalidateLedger(householdId);
     return null;
   });
 }

@@ -114,7 +114,7 @@ async function insertIncome(householdId: string, raw: IncomeInput) {
 export async function createExpense(input: ExpenseInput): Promise<ActionResult<{ id: string }>> {
   return authedAction("Could not save the expense. Please try again.", async ({ householdId }) => {
     const id = await insertExpense(householdId, input);
-    revalidateLedger();
+    revalidateLedger(householdId);
     return { id };
   });
 }
@@ -124,7 +124,7 @@ export async function updateExpense(id: string, input: ExpenseInput): Promise<Ac
     const data = await buildExpenseData(householdId, input);
     const result = await prisma.expense.updateMany({ where: { id, householdId }, data });
     if (result.count === 0) throw new UserError("This expense no longer exists.");
-    revalidateLedger();
+    revalidateLedger(householdId);
     return null;
   });
 }
@@ -133,7 +133,7 @@ export async function deleteExpense(id: string): Promise<ActionResult> {
   return authedAction("Could not delete the transaction. Please try again.", async ({ householdId }) => {
     const result = await prisma.expense.deleteMany({ where: { id, householdId } });
     if (result.count === 0) throw new UserError("This transaction was already deleted.");
-    revalidateLedger();
+    revalidateLedger(householdId);
     return null;
   });
 }
@@ -163,7 +163,7 @@ export async function duplicateExpense(id: string, date?: string): Promise<Actio
       },
       select: { id: true },
     });
-    revalidateLedger();
+    revalidateLedger(householdId);
     return { id: created.id };
   });
 }
@@ -171,7 +171,7 @@ export async function duplicateExpense(id: string, date?: string): Promise<Actio
 export async function createIncome(input: IncomeInput): Promise<ActionResult<{ id: string }>> {
   return authedAction("Could not save the money received. Please try again.", async ({ householdId }) => {
     const id = await insertIncome(householdId, input);
-    revalidateLedger();
+    revalidateLedger(householdId);
     return { id };
   });
 }
@@ -190,7 +190,7 @@ export async function updateIncome(id: string, raw: IncomeInput): Promise<Action
       },
     });
     if (result.count === 0) throw new UserError("This record no longer exists.");
-    revalidateLedger();
+    revalidateLedger(householdId);
     return null;
   });
 }
@@ -199,7 +199,7 @@ export async function deleteIncome(id: string): Promise<ActionResult> {
   return authedAction("Could not delete the transaction. Please try again.", async ({ householdId }) => {
     const result = await prisma.income.deleteMany({ where: { id, householdId } });
     if (result.count === 0) throw new UserError("This transaction was already deleted.");
-    revalidateLedger();
+    revalidateLedger(householdId);
     return null;
   });
 }
@@ -232,7 +232,7 @@ export async function syncOfflineRecords(
         }
       }
     }
-    if (synced.length) revalidateLedger();
+    if (synced.length) revalidateLedger(householdId);
     return { synced, rejected };
   });
 }
