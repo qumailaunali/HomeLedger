@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import type { Metadata } from "next";
 import { requireHousehold } from "@/server/auth";
 import { getLedgerPage } from "@/server/queries/ledger";
@@ -15,9 +16,10 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
   const [page, categories] = await Promise.all([getLedgerPage(household, query.filters), getActiveCategories(household.id)]);
 
   return (
-    <RecordsView
-      title="Home Expenses"
-      description="Regular household expenses."
+    <Suspense fallback={<div className="animate-pulse rounded-2xl bg-muted/50 h-96" />}>
+      <RecordsView
+        title="Home Expenses"
+        description="Regular household expenses."
       icon={<TypePageIcon type="HOME" />}
       variant="HOME"
       page={page}
@@ -25,5 +27,6 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
       categories={categories}
       members={[]}
     />
+    </Suspense>
   );
 }

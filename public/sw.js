@@ -39,16 +39,18 @@ self.addEventListener("fetch", (event) => {
   if (url.pathname.startsWith("/api/") || url.searchParams.has("_rsc") || req.headers.get("RSC")) return;
 
   if (url.pathname.startsWith("/_next/static/") || url.pathname.startsWith("/icons/")) {
+    // Immutable content-hashed assets: serve from cache first, refresh in background.
     event.respondWith(
-      fetch(req)
-        .then((res) => {
+      caches.match(req).then((cached) => {
+        const network = fetch(req).then((res) => {
           if (res.ok) {
             const copy = res.clone();
             caches.open(STATIC_CACHE).then((c) => c.put(req, copy));
           }
           return res;
-        })
-        .catch(async () => (await caches.match(req)) || Response.error()),
+        });
+        return cached || network;
+      }),
     );
     return;
   }

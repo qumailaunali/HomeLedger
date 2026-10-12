@@ -1,6 +1,8 @@
 "use client";
 
+import { Suspense } from "react";
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import {
   AlertTriangle,
   ArrowDownLeft,
@@ -23,8 +25,13 @@ import { TransactionList } from "@/components/ledger/transaction-list";
 import { TypeTabs } from "@/components/ledger/type-tabs";
 import { CategoryWatch } from "@/components/ledger/category-watch";
 import { TYPE_META, TypeIcon, primaryLabel } from "@/components/ledger/type-meta";
-import { SpendingTrendChart } from "@/components/charts/charts";
 import type { DashboardData, PeriodTotals } from "@/types";
+
+/** Lazy-load recharts (heavy) — the trend chart is below the fold. */
+const SpendingTrendChart = dynamic(
+  () => import("@/components/charts/charts").then((m) => m.SpendingTrendChart),
+  { ssr: false, loading: () => <div className="h-48 animate-pulse rounded-xl bg-muted/50" /> },
+);
 
 function greeting(timeZone: string) {
   const hour = Number(new Intl.DateTimeFormat("en-GB", { hour: "numeric", hour12: false, timeZone }).format(new Date()));
@@ -44,7 +51,9 @@ export function Dashboard({ data, userName }: { data: DashboardData; userName: s
 
   return (
     <>
-      <TypeTabs />
+      <Suspense fallback={<div className="h-10 animate-pulse rounded-xl bg-muted/50" />}>
+        <TypeTabs />
+      </Suspense>
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
@@ -53,7 +62,9 @@ export function Dashboard({ data, userName }: { data: DashboardData; userName: s
           </h1>
           <p className="mt-0.5 text-sm text-muted-foreground">Here is your {monthName} spending overview.</p>
         </div>
-        <MonthSelector year={data.year} month={data.month} />
+        <Suspense fallback={<div className="h-10 w-32 animate-pulse rounded-xl bg-muted/50" />}>
+          <MonthSelector year={data.year} month={data.month} />
+        </Suspense>
       </div>
 
       {alerts.length > 0 && (

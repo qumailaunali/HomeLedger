@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import type { Metadata } from "next";
 import { requireHousehold } from "@/server/auth";
 import { getLedgerPage } from "@/server/queries/ledger";
@@ -20,17 +21,19 @@ export default async function OutingPage({ searchParams }: { searchParams: Searc
   ]);
 
   return (
-    <RecordsView
-      title="Outing"
-      description="Restaurant bills and family outings."
-      icon={<TypePageIcon type="OUTING" />}
-      variant="OUTING"
-      page={page}
-      query={query}
-      categories={[]}
-      members={[]}
-    >
-      <OutingStats stats={stats} balanceCents={pots.OUTING} year={query.year} month={query.month} />
-    </RecordsView>
+    <Suspense fallback={<div className="animate-pulse rounded-2xl bg-muted/50 h-96" />}>
+      <RecordsView
+        title="Outing"
+        description="Restaurant bills and family outings."
+        icon={<TypePageIcon type="OUTING" />}
+        variant="OUTING"
+        page={page}
+        query={query}
+        categories={[]}
+        members={[]}
+      >
+        <OutingStats stats={stats} balanceCents={pots.OUTING} year={query.year} month={query.month} />
+      </RecordsView>
+    </Suspense>
   );
 }

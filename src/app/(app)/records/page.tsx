@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import type { Metadata } from "next";
 import { requireHousehold } from "@/server/auth";
 import { getLedgerPage } from "@/server/queries/ledger";
@@ -21,15 +22,17 @@ export default async function RecordsPage({ searchParams }: { searchParams: Sear
   ]);
 
   return (
-    <RecordsView
-      title="All Records"
-      description="Every expense and money received, with the running balance."
-      variant="ALL"
-      page={page}
-      query={query}
-      categories={categories}
-      members={members}
-      autoFocusSearch={sp.focus === "search"}
+    <Suspense fallback={<div className="animate-pulse rounded-2xl bg-muted/50 h-96" />}>
+      <RecordsView
+        title="All Records"
+        description="Every expense and money received, with the running balance."
+        variant="ALL"
+        page={page}
+        query={query}
+        categories={categories}
+        members={members}
+        autoFocusSearch={sp.focus === "search"}
     />
+    </Suspense>
   );
 }

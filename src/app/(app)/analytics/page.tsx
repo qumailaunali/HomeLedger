@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { requireHousehold } from "@/server/auth";
 import { getAnalytics, getShoppingBudget, getYearSummary } from "@/server/queries/summary";
 import { isoParam, str, type SearchParams } from "@/server/params";
@@ -47,12 +48,14 @@ export default async function AnalyticsPage({ searchParams }: { searchParams: Se
   ]);
 
   return (
-    <AnalyticsView
-      rangeKey={key}
-      analytics={analytics}
-      shopping={shopping}
-      shoppingYear={shoppingYear}
-      yearSummary={yearSummary}
-    />
+    <Suspense fallback={<div className="animate-pulse rounded-2xl bg-muted/50 h-96" />}>
+      <AnalyticsView
+        rangeKey={key}
+        analytics={analytics}
+        shopping={shopping}
+        shoppingYear={shoppingYear}
+        yearSummary={yearSummary}
+      />
+    </Suspense>
   );
 }

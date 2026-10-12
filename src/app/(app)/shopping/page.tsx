@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import type { Metadata } from "next";
 import { requireHousehold } from "@/server/auth";
 import { getLedgerPage } from "@/server/queries/ledger";
@@ -20,17 +21,19 @@ export default async function ShoppingPage({ searchParams }: { searchParams: Sea
   ]);
 
   return (
-    <RecordsView
-      title="Shopping"
-      description="Yearly shopping budgets for each family member."
-      icon={<TypePageIcon type="SHOPPING" />}
-      variant="SHOPPING"
-      page={page}
-      query={query}
-      categories={[]}
-      members={members}
-    >
-      <ShoppingBudgets lines={budget.lines} totals={budget.totals} year={query.year} />
-    </RecordsView>
+    <Suspense fallback={<div className="animate-pulse rounded-2xl bg-muted/50 h-96" />}>
+      <RecordsView
+        title="Shopping"
+        description="Yearly shopping budgets for each family member."
+        icon={<TypePageIcon type="SHOPPING" />}
+        variant="SHOPPING"
+        page={page}
+        query={query}
+        categories={[]}
+        members={members}
+      >
+        <ShoppingBudgets lines={budget.lines} totals={budget.totals} year={query.year} />
+      </RecordsView>
+    </Suspense>
   );
 }

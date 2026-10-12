@@ -24,12 +24,14 @@ import {
 import Image from "next/image";
 import { cn } from "@/lib/utils";
 import { logout } from "@/server/actions/auth";
+import dynamic from "next/dynamic";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogBody, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/misc";
-import { ExpenseForm } from "@/components/forms/expense-form";
-import { IncomeForm } from "@/components/forms/income-form";
-import { TransactionDetail } from "@/components/ledger/transaction-detail";
+/** Lazy-load the heavy forms (react-hook-form + zod) — only needed when dialogs open. */
+const ExpenseForm = dynamic(() => import("@/components/forms/expense-form").then((m) => m.ExpenseForm), { ssr: false });
+const IncomeForm = dynamic(() => import("@/components/forms/income-form").then((m) => m.IncomeForm), { ssr: false });
+const TransactionDetail = dynamic(() => import("@/components/ledger/transaction-detail").then((m) => m.TransactionDetail), { ssr: false });
 import { OfflineSync } from "./offline-sync";
 import { AppContext, useFormatters, type ExpenseDialogOptions } from "./app-context";
 import type { CategoryOption, HouseholdPrefs, MemberOption, TransactionRow } from "@/types";
