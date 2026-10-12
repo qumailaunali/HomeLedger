@@ -320,3 +320,11 @@ describe("validation", () => {
     assert.equal(expenseSchema.safeParse({ ...base, type: "HOME", homeCategoryId: "c", date: "2026-02-31" }).success, false);
   });
 });
+
+describe("usernames", () => {
+  test("lowercased, 3–30 chars, letters/numbers/dots/underscores", async () => {
+    const { usernameField } = await import("../src/lib/validation");
+    assert.equal(usernameField.parse("  Qumail.Ali "), "qumail.ali");
+    for (const bad of ["ab", "has space", "bad!", "x".repeat(31)]) assert.equal(usernameField.safeParse(bad).success, false, bad);
+  });
+});

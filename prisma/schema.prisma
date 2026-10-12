@@ -26,7 +26,9 @@ enum UserRole {
 
 model User {
   id           String    @id @default(cuid())
-  email        String    @unique
+  // Sign-in name, stored lowercase. Required by the app (nullable only so the column can be added to existing rows).
+  username     String?   @unique
+  email        String?   @unique
   name         String
   passwordHash String
   role         UserRole  @default(OWNER)

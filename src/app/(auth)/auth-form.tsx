@@ -25,9 +25,27 @@ export function AuthForm({ mode, next, signupOpen }: { mode: "login" | "signup";
               <Input id="name" name="name" autoComplete="name" required />
             </Field>
           )}
-          <Field label="Email" htmlFor="email">
-            <Input id="email" name="email" type="email" autoComplete="email" inputMode="email" defaultValue={state.email} required />
+          <Field
+            label="Username"
+            htmlFor="username"
+            hint={mode === "signup" ? "Letters, numbers, dots and underscores. You'll sign in with this." : undefined}
+          >
+            <Input
+              id="username"
+              name="username"
+              autoComplete="username"
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck={false}
+              defaultValue={state.username}
+              required
+            />
           </Field>
+          {mode === "signup" && (
+            <Field label="Email" htmlFor="email" optional>
+              <Input id="email" name="email" type="email" autoComplete="email" inputMode="email" defaultValue={state.email} />
+            </Field>
+          )}
           <Field label="Password" htmlFor="password" hint={mode === "signup" ? "At least 8 characters." : undefined}>
             <Input
               id="password"

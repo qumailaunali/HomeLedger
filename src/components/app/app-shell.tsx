@@ -71,7 +71,7 @@ export function AppShell({
   categories: CategoryOption[];
   members: MemberOption[];
   balanceCents: number;
-  user: { name: string; email: string };
+  user: { name: string; username: string };
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
@@ -224,7 +224,7 @@ export function AppShell({
   );
 }
 
-function TopBar({ user, onReceive, onAdd }: { user: { name: string; email: string }; onReceive: () => void; onAdd: () => void }) {
+function TopBar({ user, onReceive, onAdd }: { user: { name: string; username: string }; onReceive: () => void; onAdd: () => void }) {
   const router = useRouter();
   const [query, setQuery] = React.useState("");
 
@@ -281,7 +281,7 @@ function TopBar({ user, onReceive, onAdd }: { user: { name: string; email: strin
             <DropdownMenuContent align="end">
               <div className="px-2.5 py-2">
                 <p className="text-sm font-medium">{user.name}</p>
-                <p className="text-xs text-muted-foreground">{user.email}</p>
+                <p className="text-xs text-muted-foreground">@{user.username}</p>
               </div>
               <DropdownMenuSeparator />
               <DropdownMenuItem onSelect={onReceive} className="sm:hidden">

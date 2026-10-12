@@ -31,7 +31,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       categories={home.lines.map((l) => ({ id: l.id, name: l.name, expectedCents: l.budgetCents, spentCents: l.spentCents }))}
       members={shopping.lines.map((l) => ({ id: l.id, name: l.name, budgetCents: l.budgetCents, spentCents: l.spentCents }))}
       balanceCents={balanceCents}
-      user={{ name: user.name, email: user.email }}
+      user={{ name: user.name, username: user.username ?? "" }}
     >
       {children}
     </AppShell>

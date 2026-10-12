@@ -12,7 +12,7 @@ import bcrypt from "bcryptjs";
 const prisma = new PrismaClient();
 const reset = process.argv.includes("--reset");
 
-const DEMO_EMAIL = process.env.SEED_EMAIL ?? "demo@homeledger.local";
+const DEMO_USERNAME = process.env.SEED_USERNAME ?? "demo";
 const DEMO_PASSWORD = process.env.SEED_PASSWORD ?? "demo-password";
 
 const HOME_CATEGORIES: [string, number][] = [
@@ -101,7 +101,7 @@ async function main() {
   });
   await prisma.user.create({
     data: {
-      email: DEMO_EMAIL,
+      username: DEMO_USERNAME,
       name: "Qumail",
       passwordHash: await bcrypt.hash(DEMO_PASSWORD, 12),
       householdId: household.id,
@@ -193,7 +193,7 @@ async function main() {
   await prisma.expense.createMany({ data: expenses });
 
   console.log(`Seeded ${incomes.length} money-received records and ${expenses.length} expenses.`);
-  console.log(`Sign in with ${DEMO_EMAIL} / ${DEMO_PASSWORD}`);
+  console.log(`Sign in with username "${DEMO_USERNAME}" and password "${DEMO_PASSWORD}"`);
 }
 
 main()

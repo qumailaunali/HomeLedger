@@ -132,14 +132,23 @@ export type GeneralSettingsInput = z.input<typeof generalSettingsSchema>;
 
 export const emailField = z.string().trim().toLowerCase().email("Enter a valid email address.");
 
+export const usernameField = z
+  .string({ error: "Choose a username." })
+  .trim()
+  .toLowerCase()
+  .min(3, "Use at least 3 characters for the username.")
+  .max(30, "Keep the username under 30 characters.")
+  .regex(/^[a-z0-9._]+$/, "Use only letters, numbers, dots and underscores.");
+
 export const loginSchema = z.object({
-  email: emailField,
+  username: z.string({ error: "Enter your username." }).trim().toLowerCase().min(1, "Enter your username."),
   password: z.string().min(1, "Enter your password."),
 });
 
 export const signupSchema = z.object({
   name: nameField,
-  email: emailField,
+  username: usernameField,
+  email: emailField.optional().or(z.literal("")),
   password: z.string().min(8, "Use at least 8 characters.").max(200),
 });
 
