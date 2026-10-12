@@ -1,7 +1,9 @@
 "use client";
 
+import * as React from "react";
 import Link from "next/link";
-import { Plus } from "lucide-react";
+import { ChevronDown, Plus } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { useApp } from "@/components/app/app-context";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -20,6 +22,10 @@ export function ShoppingBudgets({
   year: number;
 }) {
   const { money, openExpense } = useApp();
+  // Collapsed by default on phones so transactions are reachable with less scroll.
+  const [expanded, setExpanded] = React.useState(
+    () => typeof window === "undefined" || !window.matchMedia("(max-width: 639px)").matches,
+  );
 
   if (lines.length === 0) {
     return (
@@ -40,46 +46,64 @@ export function ShoppingBudgets({
 
   return (
     <div className="grid gap-3">
-      <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1 text-sm text-muted-foreground">
-        <span>
-          Family total {year}: <span className="tabular font-semibold text-foreground">{money(totals.spentCents)}</span> of{" "}
-          <span className="tabular">{money(totals.budgetCents)}</span>
-        </span>
-        <span>
-          Combined remaining:{" "}
-          <span className={`tabular font-semibold ${totals.remainingCents < 0 ? "text-danger" : "text-foreground"}`}>
-            {money(totals.remainingCents)}
+      <button
+        type="button"
+        onClick={() => setExpanded((e) => !e)}
+        aria-expanded={expanded}
+        className="flex w-full items-center justify-between gap-3 rounded-2xl border border-border/70 bg-card p-3 text-left shadow-xs sm:p-4"
+      >
+        <span className="grid gap-0.5">
+          <span className="text-sm font-semibold">Family total {year}</span>
+          <span className="text-sm text-muted-foreground">
+            <span className="tabular font-semibold text-foreground">{money(totals.spentCents)}</span> of{" "}
+            <span className="tabular">{money(totals.budgetCents)}</span>
+            {" · "}
+            <span className={cn("tabular font-semibold", totals.remainingCents < 0 ? "text-danger" : "text-foreground")}>
+              {money(totals.remainingCents)}
+            </span>{" "}
+            left
           </span>
         </span>
-        <Link href="/settings/budgets" className="text-xs font-medium hover:text-foreground sm:ml-auto">
-          Edit budgets
-        </Link>
-      </div>
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        {lines.map((l) => (
-          <Card key={l.id}>
-            <CardHeader className="pb-0">
-              <div>
-                <CardTitle>{l.name}</CardTitle>
-                <CardDescription>
-                  Yearly budget {l.budgetCents > 0 ? money(l.budgetCents) : "not set"}
-                </CardDescription>
-              </div>
-              <Button
-                variant="secondary"
-                size="icon-sm"
-                aria-label={`Add shopping for ${l.name}`}
-                onClick={() => openExpense({ type: "SHOPPING", memberId: l.id })}
-              >
-                <Plus />
-              </Button>
-            </CardHeader>
-            <CardContent className="pt-1">
-              <BudgetProgress line={{ ...l, name: "Spent" }} period="yearly" compact />
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+        <ChevronDown
+          className={cn("size-5 shrink-0 text-muted-foreground transition-transform", expanded && "rotate-180")}
+          aria-hidden
+        />
+      </button>
+      {expanded && (
+        <>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {lines.map((l) => (
+              <Card key={l.id}>
+                <CardHeader className="pb-0">
+                  <div>
+                    <CardTitle>{l.name}</CardTitle>
+                    <CardDescription>
+                      Yearly budget {l.budgetCents > 0 ? money(l.budgetCents) : "not set"}
+                    </CardDescription>
+                  </div>
+                  <Button
+                    variant="secondary"
+                    size="icon-sm"
+                    className="size-11"
+                    aria-label={`Add shopping for ${l.name}`}
+                    onClick={() => openExpense({ type: "SHOPPING", memberId: l.id })}
+                  >
+                    <Plus />
+                  </Button>
+                </CardHeader>
+                <CardContent className="pt-1">
+                  <BudgetProgress line={{ ...l, name: "Spent" }} period="yearly" compact />
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+          <div className="flex justify-end">
+            <Link href="/settings/budgets" className="text-xs font-medium text-muted-foreground hover:text-foreground">
+              Edit budgets
+            </Link>
+          </div>
+        </>
+      )}
     </div>
   );
 }

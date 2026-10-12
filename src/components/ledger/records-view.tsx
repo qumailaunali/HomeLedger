@@ -108,7 +108,10 @@ export function RecordsView({
 
       {children}
 
-      <section aria-label="Filters" className="grid gap-3 rounded-2xl border border-border/70 bg-card p-3 sm:p-4">
+      <section
+        aria-label="Filters"
+        className="sticky top-14 z-10 grid gap-3 rounded-2xl border border-border/70 bg-card p-3 shadow-sm sm:p-4"
+      >
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
           <label className="relative flex-1">
             <span className="sr-only">Search transactions</span>
@@ -123,17 +126,19 @@ export function RecordsView({
             />
           </label>
           <div className="flex flex-wrap items-center gap-2">
-            <NativeSelect
-              aria-label="Period"
-              value={query.period}
-              onChange={(e) => set({ period: e.target.value, from: null, to: null })}
-              className="h-10 w-auto"
-            >
-              <option value="month">Month</option>
-              <option value="year">Year</option>
-              <option value="all">All time</option>
-              <option value="range">Date range</option>
-            </NativeSelect>
+            {variant !== "SHOPPING" && (
+              <NativeSelect
+                aria-label="Period"
+                value={query.period}
+                onChange={(e) => set({ period: e.target.value, from: null, to: null })}
+                className="h-11 w-auto"
+              >
+                <option value="month">Month</option>
+                <option value="year">Year</option>
+                <option value="all">All time</option>
+                <option value="range">Date range</option>
+              </NativeSelect>
+            )}
             {query.period === "month" && <MonthSelector year={query.year} month={query.month} />}
             {query.period === "year" && <MonthSelector year={query.year} month={query.month} mode="year" />}
             {query.period === "range" && (
@@ -175,7 +180,7 @@ export function RecordsView({
             </NativeSelect>
           )}
           {showMember && (
-            <div role="radiogroup" aria-label="Person" className="-mx-1 flex max-w-full gap-1.5 overflow-x-auto px-1 pb-0.5">
+            <div role="radiogroup" aria-label="Person" className="flex flex-wrap gap-1.5">
               {[{ id: "", name: "Everyone" }, ...members].map((m) => {
                 const active = (query.filters.memberId ?? "") === m.id;
                 return (
@@ -217,17 +222,6 @@ export function RecordsView({
                 Received <Money cents={page.receivedCents} tone="positive" className="font-semibold" />
               </span>
             )}
-            <Segmented
-              label="View"
-              size="lg"
-              className="sm:hidden"
-              value={view}
-              onChange={setView}
-              options={[
-                { value: "sheet", label: <span className="flex items-center gap-1.5"><Sheet className="size-4" /> Table</span> },
-                { value: "list", label: <span className="flex items-center gap-1.5"><Rows3 className="size-4" /> Cards</span> },
-              ]}
-            />
           </div>
         </div>
       </section>
@@ -250,6 +244,19 @@ export function RecordsView({
         </div>
       ) : (
         <>
+          <div className="flex items-center justify-between sm:hidden">
+            <h2 className="text-sm font-semibold text-muted-foreground">Transactions</h2>
+            <Segmented
+              label="View"
+              size="lg"
+              value={view}
+              onChange={setView}
+              options={[
+                { value: "sheet", label: <span className="flex items-center gap-1.5"><Sheet className="size-4" /> Table</span> },
+                { value: "list", label: <span className="flex items-center gap-1.5"><Rows3 className="size-4" /> Cards</span> },
+              ]}
+            />
+          </div>
           <div className={cn(view === "list" && "hidden sm:block")}>
             <LedgerTable page={page} variant={variant} sort={query.filters.sort ?? "date"} dir={query.filters.dir ?? "desc"} />
           </div>
