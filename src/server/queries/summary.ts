@@ -28,6 +28,9 @@ import type { CategoryOption, DashboardData, MemberOption } from "@/types";
 
 type DateRange = { gte: Date; lt: Date };
 
+/** Averages are shown in whole rupees. */
+const wholeRupees = (cents: number) => Math.round(cents / 100) * 100;
+
 export async function getBalanceCents(household: HouseholdContext): Promise<Cents> {
   const [received, spent] = await Promise.all([
     prisma.income.aggregate({ where: { householdId: household.id }, _sum: { amount: true } }),
@@ -278,7 +281,7 @@ export async function getOutingStats(householdId: string, year: number, month: n
     previousMonthCount: prevAgg._count,
     yearCents,
     yearCount: yearAgg._count,
-    averageCents: yearAgg._count ? Math.round(yearCents / yearAgg._count) : 0,
+    averageCents: yearAgg._count ? wholeRupees(yearCents / yearAgg._count) : 0,
     largest: largest
       ? { place: largest.place ?? "Outing", amountCents: toCents(largest.amount), date: isoOf(largest.date) }
       : null,
@@ -350,14 +353,14 @@ export async function getAnalytics(household: HouseholdContext, from: IsoDate, t
     months,
     totals,
     series,
-    averageMonthlyCents: activeMonths.length ? Math.round(totals.spentCents / activeMonths.length) : 0,
+    averageMonthlyCents: activeMonths.length ? wholeRupees(totals.spentCents / activeMonths.length) : 0,
     highestMonth: highest ? { label: `${MONTH_NAMES[highest.month - 1]} ${highest.year}`, cents: highest.spentCents } : null,
     largestExpense: largest.rows[0] ?? null,
     homeCategories: homeCategories.sort((a, b) => b.spentCents - a.spentCents),
     outing: {
       totalCents: toCents(outingAgg._sum.amount),
       count: outingAgg._count,
-      averageCents: outingAgg._count ? Math.round(toCents(outingAgg._sum.amount) / outingAgg._count) : 0,
+      averageCents: outingAgg._count ? wholeRupees(toCents(outingAgg._sum.amount) / outingAgg._count) : 0,
       largest: outingLargest
         ? { place: outingLargest.place ?? "Outing", amountCents: toCents(outingLargest.amount), date: isoOf(outingLargest.date) }
         : null,
@@ -378,7 +381,7 @@ export async function getYearSummary(householdId: string, year: number) {
     year,
     totals,
     series,
-    averageMonthlyCents: monthsWithSpending ? Math.round(totals.spentCents / monthsWithSpending) : 0,
+    averageMonthlyCents: monthsWithSpending ? wholeRupees(totals.spentCents / monthsWithSpending) : 0,
   };
 }
 
