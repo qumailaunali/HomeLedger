@@ -208,7 +208,7 @@ function RowActions({ row, onDelete }: { row: TransactionRow; onDelete: (row: Tr
     <DropdownMenu>
       <DropdownMenuTrigger
         onClick={(e) => e.stopPropagation()}
-        className="flex size-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
+        className="flex size-11 items-center justify-center rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
         aria-label={`Actions for ${primaryLabel(row)}`}
       >
         <MoreHorizontal className="size-4" />
@@ -296,7 +296,7 @@ function Pagination({ page }: { page: LedgerPage }) {
           <Link
             aria-disabled={page.page <= 1}
             href={href({ page: String(page.page - 1) })}
-            className={cn(buttonVariants({ variant: "outline", size: "sm" }), page.page <= 1 && "pointer-events-none opacity-50")}
+            className={cn(buttonVariants({ variant: "outline", size: "sm" }), "h-11 sm:h-9", page.page <= 1 && "pointer-events-none opacity-50")}
             scroll={false}
           >
             <ChevronLeft /> Previous
@@ -307,7 +307,7 @@ function Pagination({ page }: { page: LedgerPage }) {
           <Link
             aria-disabled={page.page >= pages}
             href={href({ page: String(page.page + 1) })}
-            className={cn(buttonVariants({ variant: "outline", size: "sm" }), page.page >= pages && "pointer-events-none opacity-50")}
+            className={cn(buttonVariants({ variant: "outline", size: "sm" }), "h-11 sm:h-9", page.page >= pages && "pointer-events-none opacity-50")}
             scroll={false}
           >
             Next <ChevronRight />

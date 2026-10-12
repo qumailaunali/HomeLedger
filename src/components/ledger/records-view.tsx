@@ -149,7 +149,7 @@ export function RecordsView({
             <div className="-mx-1 max-w-full overflow-x-auto px-1">
               <Segmented
                 label="Type"
-                size="sm"
+                size="lg"
                 value={type as string}
                 onChange={(v) => set({ type: v === "ALL" ? null : v, category: null, member: null })}
                 options={[
@@ -217,7 +217,7 @@ export function RecordsView({
             )}
             <Segmented
               label="View"
-              size="sm"
+              size="lg"
               className="sm:hidden"
               value={view}
               onChange={setView}

@@ -41,18 +41,18 @@ export function ReorderList<T extends { id: string; name: string; isActive: bool
               disabled={i === 0}
               onClick={() => move(i, -1)}
               aria-label={`Move ${item.name} up`}
-              className="rounded p-0.5 text-muted-foreground hover:bg-accent hover:text-foreground disabled:opacity-30"
+              className="flex size-11 items-center justify-center rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground disabled:opacity-30"
             >
-              <ArrowUp className="size-3.5" />
+              <ArrowUp className="size-5" />
             </button>
             <button
               type="button"
               disabled={i === items.length - 1}
               onClick={() => move(i, 1)}
               aria-label={`Move ${item.name} down`}
-              className="rounded p-0.5 text-muted-foreground hover:bg-accent hover:text-foreground disabled:opacity-30"
+              className="flex size-11 items-center justify-center rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground disabled:opacity-30"
             >
-              <ArrowDown className="size-3.5" />
+              <ArrowDown className="size-5" />
             </button>
           </div>
           <button type="button" onClick={() => onEdit(item)} className="min-w-0 flex-1 rounded-lg px-1 py-0.5 text-left hover:bg-accent/50">

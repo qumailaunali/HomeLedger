@@ -48,7 +48,7 @@ export function MonthSelector({
       <div className="flex items-center rounded-xl border bg-card p-0.5 shadow-xs">
         <Link
           href={hrefFor(prev.year, prev.month)}
-          className={buttonVariants({ variant: "ghost", size: "icon-sm" })}
+          className={cn(buttonVariants({ variant: "ghost", size: "icon-sm" }), "size-11 sm:size-9")}
           aria-label={`Previous ${unit}`}
           scroll={false}
         >
@@ -59,7 +59,7 @@ export function MonthSelector({
         </span>
         <Link
           href={hrefFor(next.year, next.month)}
-          className={buttonVariants({ variant: "ghost", size: "icon-sm" })}
+          className={cn(buttonVariants({ variant: "ghost", size: "icon-sm" }), "size-11 sm:size-9")}
           aria-label={`Next ${unit}`}
           scroll={false}
         >

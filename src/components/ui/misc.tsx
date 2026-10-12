@@ -31,7 +31,7 @@ export function Segmented<T extends string>({
   options: { value: T; label: React.ReactNode }[];
   label: string;
   className?: string;
-  size?: "default" | "sm";
+  size?: "default" | "sm" | "lg";
 }) {
   return (
     <div role="radiogroup" aria-label={label} className={cn("inline-flex rounded-xl bg-muted p-1", className)}>
@@ -46,7 +46,7 @@ export function Segmented<T extends string>({
             onClick={() => onChange(o.value)}
             className={cn(
               "flex-1 rounded-lg font-medium whitespace-nowrap transition-all focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50",
-              size === "sm" ? "px-2.5 py-1 text-xs" : "px-3 py-1.5 text-[13px]",
+              size === "sm" ? "px-2.5 py-1 text-xs" : size === "lg" ? "px-4 py-2.5 text-sm min-h-11" : "px-3 py-1.5 text-[13px]",
               active ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground",
             )}
           >

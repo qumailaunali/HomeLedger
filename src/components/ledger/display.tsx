@@ -158,7 +158,7 @@ export function SummaryCard({
           </span>
         )}
       </div>
-      <Money cents={cents} tone={tone} className="mt-2 block text-[22px] font-semibold tracking-tight sm:text-2xl" />
+      <Money cents={cents} tone={tone} className="mt-2 block text-lg font-semibold tracking-tight sm:text-[22px]" />
       {hint && <div className="mt-1 text-xs text-muted-foreground">{hint}</div>}
     </>
   );
