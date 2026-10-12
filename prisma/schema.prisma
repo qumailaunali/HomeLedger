@@ -121,6 +121,7 @@ model Income {
   @@unique([householdId, clientId])
   @@index([householdId, date])
   @@index([householdId, pot])
+  @@index([householdId, date, createdAt])
 }
 
 model Expense {
@@ -155,6 +156,9 @@ model Expense {
   @@index([householdId, type, date])
   @@index([householdId, shoppingMemberId, date])
   @@index([householdId, homeCategoryId, date])
+  @@index([householdId, type, homeCategoryId])
+  @@index([householdId, type, shoppingMemberId])
+  @@index([householdId, date, createdAt])
 }
 
 // Recurring expenses (future): a `RecurringExpense` template table
