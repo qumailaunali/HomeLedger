@@ -39,6 +39,8 @@ export function Dashboard({ data, userName }: { data: DashboardData; userName: s
   const prev = shiftMonth(data.year, data.month, -1);
   const spentChange = percentChange(data.current.spentCents, data.previous.spentCents);
   const hasActivity = data.recent.length > 0;
+  // Only red (over-budget) alerts; yellow cautions are not shown.
+  const alerts = data.warnings.filter((w) => w.tone === "danger");
 
   return (
     <>
@@ -54,9 +56,9 @@ export function Dashboard({ data, userName }: { data: DashboardData; userName: s
         <MonthSelector year={data.year} month={data.month} />
       </div>
 
-      {data.warnings.length > 0 && (
+      {alerts.length > 0 && (
         <ul className="grid gap-2" aria-label="Budget warnings">
-          {data.warnings.map((w) => (
+          {alerts.map((w) => (
             <li
               key={w.id}
               className={cn(

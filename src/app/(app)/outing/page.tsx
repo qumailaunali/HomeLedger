@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { requireHousehold } from "@/server/auth";
 import { getLedgerPage } from "@/server/queries/ledger";
-import { getOutingStats } from "@/server/queries/summary";
+import { getOutingStats, getPotBalances } from "@/server/queries/summary";
 import { ledgerQueryFromParams } from "@/server/ledger-params";
 import type { SearchParams } from "@/server/params";
 import { todayIso } from "@/lib/dates";
@@ -13,9 +13,10 @@ export const metadata: Metadata = { title: "Outing" };
 export default async function OutingPage({ searchParams }: { searchParams: SearchParams }) {
   const { household } = await requireHousehold();
   const query = ledgerQueryFromParams(await searchParams, todayIso(household.timezone), "OUTING");
-  const [page, stats] = await Promise.all([
+  const [page, stats, pots] = await Promise.all([
     getLedgerPage(household, query.filters),
     getOutingStats(household.id, query.year, query.month),
+    getPotBalances(household),
   ]);
 
   return (
@@ -29,7 +30,7 @@ export default async function OutingPage({ searchParams }: { searchParams: Searc
       categories={[]}
       members={[]}
     >
-      <OutingStats stats={stats} year={query.year} month={query.month} />
+      <OutingStats stats={stats} balanceCents={pots.OUTING} year={query.year} month={query.month} />
     </RecordsView>
   );
 }

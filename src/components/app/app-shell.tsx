@@ -40,8 +40,8 @@ const NAV = [
     section: "Transactions",
     items: [
       { href: "/home", label: "Home", icon: Home },
-      { href: "/shopping", label: "Shopping", icon: ShoppingBag },
       { href: "/outing", label: "Outing", icon: UtensilsCrossed },
+      { href: "/shopping", label: "Shopping", icon: ShoppingBag },
       { href: "/records", label: "All Records", icon: TableProperties },
     ],
   },
