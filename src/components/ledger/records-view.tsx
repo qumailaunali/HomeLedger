@@ -65,7 +65,9 @@ export function RecordsView({
   const { openExpense } = useApp();
   const { params, set } = useUrlState();
   const [search, setSearch] = React.useState(query.filters.search ?? "");
-  const [view, setView] = React.useState<"sheet" | "list">("sheet");
+  const [view, setView] = React.useState<"sheet" | "list">(() =>
+    typeof window !== "undefined" && window.matchMedia("(max-width: 639px)").matches ? "list" : "sheet",
+  );
   const type = query.filters.type ?? "ALL";
   const periodLabel =
     query.period === "month"
@@ -222,8 +224,8 @@ export function RecordsView({
               value={view}
               onChange={setView}
               options={[
-                { value: "sheet", label: <Sheet className="size-4" aria-label="Sheet view" /> },
-                { value: "list", label: <Rows3 className="size-4" aria-label="List view" /> },
+                { value: "sheet", label: <span className="flex items-center gap-1.5"><Sheet className="size-4" /> Table</span> },
+                { value: "list", label: <span className="flex items-center gap-1.5"><Rows3 className="size-4" /> Cards</span> },
               ]}
             />
           </div>
