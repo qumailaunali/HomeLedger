@@ -1,13 +1,14 @@
 /* Home Expense Tracker service worker.
  *
- * - Static build assets: cache-first (they are content-hashed).
+ * - Static assets: network-first with cache fallback, so a stale copy can never
+ *   hide a newer build (dev builds are not content-hashed).
  * - Pages: network-first; the last good copy of each visited page is kept so
  *   the app shell and previously loaded information still open offline.
  * - Everything else (server actions, API, exports, RSC payloads) goes straight
  *   to the network. Offline expense entry is handled in the page itself
  *   (localStorage queue + idempotent sync), not here.
  */
-const VERSION = "v2";
+const VERSION = "v3";
 const STATIC_CACHE = `static-${VERSION}`;
 const PAGE_CACHE = `pages-${VERSION}`;
 const PRECACHE = ["/offline", "/manifest.webmanifest", "/icons/icon-192.png", "/icons/icon-512.png"];
@@ -39,17 +40,15 @@ self.addEventListener("fetch", (event) => {
 
   if (url.pathname.startsWith("/_next/static/") || url.pathname.startsWith("/icons/")) {
     event.respondWith(
-      caches.match(req).then(
-        (hit) =>
-          hit ||
-          fetch(req).then((res) => {
-            if (res.ok) {
-              const copy = res.clone();
-              caches.open(STATIC_CACHE).then((c) => c.put(req, copy));
-            }
-            return res;
-          }),
-      ),
+      fetch(req)
+        .then((res) => {
+          if (res.ok) {
+            const copy = res.clone();
+            caches.open(STATIC_CACHE).then((c) => c.put(req, copy));
+          }
+          return res;
+        })
+        .catch(async () => (await caches.match(req)) || Response.error()),
     );
     return;
   }
