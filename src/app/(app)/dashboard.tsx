@@ -42,7 +42,7 @@ export function Dashboard({ data, userName }: { data: DashboardData; userName: s
 
   return (
     <>
-      <TypeTabs current={data.current} previous={data.previous} year={data.year} month={data.month} />
+      <TypeTabs year={data.year} month={data.month} />
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
@@ -235,23 +235,12 @@ function ChangeHint({ change, previous }: { change: number | null; previous: num
   );
 }
 
-/** Floating header: Home · Outing · Shopping with this month's totals. */
-function TypeTabs({
-  current,
-  previous,
-  year,
-  month,
-}: {
-  current: PeriodTotals;
-  previous: PeriodTotals;
-  year: number;
-  month: number;
-}) {
-  const { money } = useApp();
-  const tabs: { type: ExpenseType; href: string; key: "homeCents" | "outingCents" | "shoppingCents" }[] = [
-    { type: "HOME", href: `/home?year=${year}&month=${month}`, key: "homeCents" },
-    { type: "OUTING", href: `/outing?year=${year}&month=${month}`, key: "outingCents" },
-    { type: "SHOPPING", href: `/shopping?year=${year}`, key: "shoppingCents" },
+/** Floating header: Home · Outing · Shopping buttons. */
+function TypeTabs({ year, month }: { year: number; month: number }) {
+  const tabs: { type: ExpenseType; href: string }[] = [
+    { type: "HOME", href: `/home?year=${year}&month=${month}` },
+    { type: "OUTING", href: `/outing?year=${year}&month=${month}` },
+    { type: "SHOPPING", href: `/shopping?year=${year}` },
   ];
   return (
     <nav
@@ -260,27 +249,15 @@ function TypeTabs({
     >
       <ul className="grid grid-cols-3 gap-1">
         {tabs.map((t) => {
-          const change = percentChange(current[t.key], previous[t.key]);
           const Icon = TYPE_META[t.type].icon;
           return (
             <li key={t.type}>
               <Link
                 href={t.href}
-                className="flex flex-col items-center gap-0.5 rounded-xl px-2 py-2 text-center transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 sm:flex-row sm:gap-3 sm:px-3 sm:text-left"
+                className="flex h-11 items-center justify-center gap-2 rounded-xl px-2 text-sm font-medium transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
               >
-                <span className={cn("flex size-8 shrink-0 items-center justify-center rounded-lg", TYPE_META[t.type].soft)} aria-hidden>
-                  <Icon className={cn("size-4", TYPE_META[t.type].text)} />
-                </span>
-                <span className="min-w-0">
-                  <span className="block text-xs font-medium text-muted-foreground sm:text-[13px]">{TYPE_META[t.type].label}</span>
-                  <span className="tabular block truncate text-sm font-semibold sm:text-base">{money(current[t.key])}</span>
-                  {change !== null && (
-                    <span className="hidden text-[11px] text-muted-foreground sm:block">
-                      {change > 0 ? "+" : ""}
-                      {change}% vs last month
-                    </span>
-                  )}
-                </span>
+                <Icon className={cn("size-4", TYPE_META[t.type].text)} aria-hidden />
+                {TYPE_META[t.type].label}
               </Link>
             </li>
           );
