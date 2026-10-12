@@ -163,7 +163,7 @@ export function RecordsView({
             </div>
           )}
           {showCategory && (
-            <NativeSelect aria-label="Category" value={query.filters.categoryId ?? ""} onChange={(e) => set({ category: e.target.value })} className="h-9 w-auto text-sm">
+            <NativeSelect aria-label="Category" value={query.filters.categoryId ?? ""} onChange={(e) => set({ category: e.target.value })} className="h-11 w-auto text-sm">
               <option value="">All categories</option>
               {categories.map((c) => (
                 <option key={c.id} value={c.id}>
@@ -184,7 +184,7 @@ export function RecordsView({
                     aria-checked={active}
                     onClick={() => set({ member: m.id || null })}
                     className={cn(
-                      "h-9 shrink-0 rounded-xl border px-3.5 text-sm font-medium whitespace-nowrap transition-colors focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50",
+                      "h-11 shrink-0 rounded-xl border px-4 text-sm font-medium whitespace-nowrap transition-colors focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50",
                       active ? "border-primary bg-primary text-primary-foreground shadow-sm" : "bg-card hover:bg-accent",
                     )}
                   >
