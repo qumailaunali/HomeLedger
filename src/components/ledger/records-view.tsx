@@ -13,6 +13,7 @@ import { EmptyState, Money, PageHeader } from "./display";
 import { LedgerTable, type LedgerVariant } from "./ledger-table";
 import { MonthSelector } from "./month-selector";
 import { TransactionList } from "./transaction-list";
+import { TypeTabs } from "./type-tabs";
 import { TYPE_META, TypeIcon, targetLabel } from "./type-meta";
 import type { LedgerQuery } from "@/server/ledger-params";
 import type { CategoryOption, ExpenseType, LedgerPage, MemberOption } from "@/types";
@@ -90,6 +91,8 @@ export function RecordsView({
 
   return (
     <>
+      {variant !== "ALL" && <TypeTabs />}
+
       <PageHeader
         title={title}
         description={description}

@@ -22,9 +22,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { BudgetProgress, EmptyState, Money, SummaryCard } from "@/components/ledger/display";
 import { MonthSelector } from "@/components/ledger/month-selector";
 import { TransactionList } from "@/components/ledger/transaction-list";
+import { TypeTabs } from "@/components/ledger/type-tabs";
 import { TYPE_META, TypeIcon, primaryLabel } from "@/components/ledger/type-meta";
 import { BreakdownDonut, SpendingTrendChart } from "@/components/charts/charts";
-import type { DashboardData, ExpenseType, PeriodTotals } from "@/types";
+import type { DashboardData, PeriodTotals } from "@/types";
 
 function greeting(timeZone: string) {
   const hour = Number(new Intl.DateTimeFormat("en-GB", { hour: "numeric", hour12: false, timeZone }).format(new Date()));
@@ -42,7 +43,7 @@ export function Dashboard({ data, userName }: { data: DashboardData; userName: s
 
   return (
     <>
-      <TypeTabs year={data.year} month={data.month} />
+      <TypeTabs />
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
@@ -232,38 +233,6 @@ function ChangeHint({ change, previous }: { change: number | null; previous: num
       <Icon className={cn("size-3.5", up ? "text-danger" : "text-positive")} aria-hidden />
       {Math.abs(change)}% {up ? "more" : "less"} than last month ({money(previous)})
     </span>
-  );
-}
-
-/** Floating header: Home · Outing · Shopping buttons. */
-function TypeTabs({ year, month }: { year: number; month: number }) {
-  const tabs: { type: ExpenseType; href: string }[] = [
-    { type: "HOME", href: `/home?year=${year}&month=${month}` },
-    { type: "OUTING", href: `/outing?year=${year}&month=${month}` },
-    { type: "SHOPPING", href: `/shopping?year=${year}` },
-  ];
-  return (
-    <nav
-      aria-label="Expense types"
-      className="sticky top-[calc(3.5rem+env(safe-area-inset-top)+0.5rem)] z-10 rounded-2xl border border-border/70 bg-card/90 p-1.5 shadow-lg shadow-black/5 backdrop-blur-md"
-    >
-      <ul className="grid grid-cols-3 gap-1">
-        {tabs.map((t) => {
-          const Icon = TYPE_META[t.type].icon;
-          return (
-            <li key={t.type}>
-              <Link
-                href={t.href}
-                className="flex h-11 items-center justify-center gap-2 rounded-xl px-2 text-sm font-medium transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
-              >
-                <Icon className={cn("size-4", TYPE_META[t.type].text)} aria-hidden />
-                {TYPE_META[t.type].label}
-              </Link>
-            </li>
-          );
-        })}
-      </ul>
-    </nav>
   );
 }
 
