@@ -15,9 +15,20 @@ import { useToast } from "@/components/ui/toast";
 import { Button } from "@/components/ui/button";
 import { Field, Input } from "@/components/ui/form-controls";
 import { AmountInput } from "@/components/ledger/amount-input";
-import type { TransactionRow } from "@/types";
+import { TYPE_META } from "@/components/ledger/type-meta";
+import type { ExpenseType, TransactionRow } from "@/types";
 
-export function IncomeForm({ edit, onDone }: { edit?: TransactionRow; onDone: () => void }) {
+const POTS: ExpenseType[] = ["HOME", "OUTING", "SHOPPING"];
+
+export function IncomeForm({
+  edit,
+  defaultPot = "HOME",
+  onDone,
+}: {
+  edit?: TransactionRow;
+  defaultPot?: ExpenseType;
+  onDone: () => void;
+}) {
   const { prefs } = useApp();
   const toast = useToast();
   const [saving, setSaving] = React.useState(false);
@@ -32,11 +43,13 @@ export function IncomeForm({ edit, onDone }: { edit?: TransactionRow; onDone: ()
           date: edit.date,
           description: edit.description === edit.source ? "" : edit.description,
           source: edit.source ?? "",
+          pot: edit.pot ?? undefined,
         }
-      : { amount: "", date: todayIso(), description: "", source: "House money" },
+      : { amount: "", date: todayIso(), description: "", source: "House money", pot: defaultPot },
   });
   const { register, handleSubmit, setValue, setError, formState } = form;
   const source = useWatch({ control: form.control, name: "source" });
+  const pot = useWatch({ control: form.control, name: "pot" });
   const errors = formState.errors;
 
   async function save(values: IncomeInput) {
@@ -77,6 +90,38 @@ export function IncomeForm({ edit, onDone }: { edit?: TransactionRow; onDone: ()
           {...register("amount")}
         />
       </Field>
+
+      <div className="grid gap-1.5">
+        <span className="text-[13px] font-medium text-foreground/85" id="pot-label">
+          Add to
+        </span>
+        <div role="radiogroup" aria-labelledby="pot-label" className="grid grid-cols-3 gap-2">
+          {POTS.map((p) => {
+            const Icon = TYPE_META[p].icon;
+            return (
+              <button
+                key={p}
+                type="button"
+                role="radio"
+                aria-checked={pot === p}
+                onClick={() => setValue("pot", p, { shouldValidate: formState.isSubmitted })}
+                className={cn(
+                  "flex min-h-11 items-center justify-center gap-2 rounded-xl border text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50",
+                  pot === p ? "border-primary bg-primary text-primary-foreground shadow-sm" : "bg-card hover:bg-accent",
+                )}
+              >
+                <Icon className={cn("size-4", pot !== p && TYPE_META[p].text)} aria-hidden />
+                {TYPE_META[p].label}
+              </button>
+            );
+          })}
+        </div>
+        {errors.pot && (
+          <p role="alert" className="text-[13px] text-danger">
+            {errors.pot.message}
+          </p>
+        )}
+      </div>
 
       <div className="grid gap-1.5">
         <span className="text-[13px] font-medium text-foreground/85" id="source-label">

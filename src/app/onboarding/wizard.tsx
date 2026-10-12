@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { Check, Loader2, Plus, X } from "lucide-react";
+import { Loader2, Plus, X } from "lucide-react";
 import { completeOnboarding } from "@/server/actions/auth";
 import { onboardingSchema, firstIssue } from "@/lib/validation";
 import { cn } from "@/lib/utils";
@@ -11,24 +11,24 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Field, Input, NativeSelect } from "@/components/ui/form-controls";
 
-const SUGGESTED_CATEGORIES: [string, string][] = [
-  ["Food", "17000"],
-  ["Shopping", "15000"],
-  ["Masi", "15000"],
-  ["Petrol Freed", "15700"],
-  ["Mehran Petrol", "10000"],
-  ["Qumail", "7000"],
-  ["Sarah", "7000"],
-  ["Taha Van", "5500"],
-  ["Qumail Van", ""],
-  ["Quran", "4500"],
-  ["KC", "3000"],
-  ["Chokidar", "3000"],
-  ["Taha", "3000"],
-  ["Internet", "1400"],
-  ["Madrasa Van", "1300"],
-  ["Madrasa", "1200"],
-  ["Cable", "400"],
+const SUGGESTED_CATEGORIES = [
+  "Food",
+  "Groceries",
+  "Internet",
+  "Cable",
+  "Electricity",
+  "Gas",
+  "Masi",
+  "Madrasa",
+  "Madrasa Van",
+  "Quran",
+  "Qumail Van",
+  "Taha Van",
+  "Mehran Petrol",
+  "Petrol Freed",
+  "Chokidar",
+  "KC",
+  "Pocket Money",
 ];
 
 const SUGGESTED_MEMBERS: [string, string][] = [
@@ -52,6 +52,8 @@ interface Row {
   name: string;
   amount: string;
   selected: boolean;
+  /** Home categories: budget field opened (budgets are optional). */
+  budgetOpen?: boolean;
 }
 
 const STEPS = ["Household", "Currency", "Home categories", "Shopping members", "Yearly budgets"];
@@ -64,7 +66,7 @@ export function OnboardingWizard({ defaultName, userName, year }: { defaultName:
   const [currency, setCurrency] = React.useState("PKR");
   const [symbol, setSymbol] = React.useState("Rs.");
   const [startingBalance, setStartingBalance] = React.useState("");
-  const [categories, setCategories] = React.useState<Row[]>(SUGGESTED_CATEGORIES.map(([n, a]) => ({ name: n, amount: a, selected: true })));
+  const [categories, setCategories] = React.useState<Row[]>(SUGGESTED_CATEGORIES.map((n) => ({ name: n, amount: "", selected: true })));
   const [members, setMembers] = React.useState<Row[]>(SUGGESTED_MEMBERS.map(([n, a]) => ({ name: n, amount: a, selected: true })));
   const [newCategory, setNewCategory] = React.useState("");
   const [newMember, setNewMember] = React.useState("");
@@ -162,8 +164,8 @@ export function OnboardingWizard({ defaultName, userName, year }: { defaultName:
 
           {step === 2 && (
             <RowsEditor
-              intro="Pick your regular Home expenses and their usual monthly amount. You can change these any time in Settings."
-              amountLabel="per month"
+              intro="These are your Home expense categories. Remove any you don’t need, add your own, and optionally set a monthly budget for some. You can change all of this later in Settings."
+              amountLabel="monthly budget"
               symbol={symbol}
               rows={categories}
               setRows={setCategories}
@@ -261,48 +263,46 @@ function RowsEditor({
     <>
       <p className="text-sm text-muted-foreground">{intro}</p>
       <ul className="grid gap-1.5">
-        {rows.map((r, i) => (
-          <li key={i} className="flex items-center gap-2">
-            <button
-              type="button"
-              role="checkbox"
-              aria-checked={r.selected}
-              aria-label={`Include ${r.name}`}
-              onClick={() => setRows((rs) => rs.map((x, j) => (j === i ? { ...x, selected: !x.selected } : x)))}
-              className={cn(
-                "flex size-6 shrink-0 items-center justify-center rounded-md border transition-colors",
-                r.selected ? "border-primary bg-primary text-primary-foreground" : "bg-card",
-              )}
-            >
-              {r.selected && <Check className="size-3.5" />}
-            </button>
-            <span className={cn("flex-1 truncate text-sm", !r.selected && "text-muted-foreground line-through")}>{r.name}</span>
-            {!hideAmounts && (
-              <div className="relative w-36">
-                <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">{symbol}</span>
-                <Input
-                  aria-label={`${r.name} ${amountLabel ?? "amount"}`}
-                  inputMode="decimal"
-                  disabled={!r.selected}
-                  className="h-9 pl-10 text-right text-sm"
-                  value={r.amount}
-                  placeholder="—"
-                  onChange={(e) => setRows((rs) => rs.map((x, j) => (j === i ? { ...x, amount: e.target.value.replace(/[^\d.,]/g, "") } : x)))}
-                />
-              </div>
-            )}
-            {hideAmounts && (
+        {rows.map((r, i) => {
+          const update = (patch: Partial<Row>) => setRows((rs) => rs.map((x, j) => (j === i ? { ...x, ...patch } : x)));
+          return (
+            <li key={`${r.name}-${i}`} className="flex min-h-10 items-center gap-2 rounded-xl border bg-card px-3 py-1.5">
+              <span className="flex-1 truncate text-sm font-medium">{r.name}</span>
+              {!hideAmounts &&
+                (r.budgetOpen ? (
+                  <div className="relative w-36">
+                    <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">{symbol}</span>
+                    <Input
+                      aria-label={`${r.name} ${amountLabel ?? "budget"}`}
+                      inputMode="decimal"
+                      autoFocus
+                      className="h-8 pl-10 text-right text-sm"
+                      value={r.amount}
+                      placeholder="Budget"
+                      onChange={(e) => update({ amount: e.target.value.replace(/[^d.,]/g, "") })}
+                      onBlur={() => !r.amount && update({ budgetOpen: false })}
+                    />
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => update({ budgetOpen: true })}
+                    className="rounded-lg px-2 py-1 text-xs font-medium text-muted-foreground hover:bg-accent hover:text-foreground"
+                  >
+                    + Budget
+                  </button>
+                ))}
               <button
                 type="button"
                 aria-label={`Remove ${r.name}`}
                 onClick={() => setRows((rs) => rs.filter((_, j) => j !== i))}
-                className="rounded-md p-1 text-muted-foreground hover:bg-accent"
+                className="rounded-md p-1 text-muted-foreground hover:bg-accent hover:text-foreground"
               >
                 <X className="size-4" />
               </button>
-            )}
-          </li>
-        ))}
+            </li>
+          );
+        })}
       </ul>
       <div className="flex gap-2">
         <Input

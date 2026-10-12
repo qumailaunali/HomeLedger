@@ -243,6 +243,7 @@ export async function restoreBackup(json: string): Promise<ActionResult> {
             amount: money(i.amount),
             description: i.description,
             source: i.source,
+            pot: i.pot ?? null,
           })),
         });
         await tx.expense.createMany({

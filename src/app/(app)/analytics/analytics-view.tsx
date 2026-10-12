@@ -122,6 +122,7 @@ export function AnalyticsView({
               color="var(--home)"
               emptyText="No Home expenses in this period."
             />
+            {a.homeCategories.some((c) => c.expectedCents > 0) && (
             <Card>
               <CardHeader>
                 <div>
@@ -142,7 +143,7 @@ export function AnalyticsView({
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border/60">
-                    {a.homeCategories.map((c) => {
+                    {a.homeCategories.filter((c) => c.expectedCents > 0).map((c) => {
                       const status = budgetStatus(c.spentCents, c.expectedCents);
                       return (
                         <tr key={c.id}>
@@ -172,6 +173,7 @@ export function AnalyticsView({
                 )}
               </CardContent>
             </Card>
+            )}
           </div>
         </>
       )}

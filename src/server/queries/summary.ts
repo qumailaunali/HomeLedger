@@ -54,6 +54,34 @@ export async function getActiveMembers(householdId: string, year: number): Promi
   return rows.map((m) => ({ id: m.id, name: m.name, budgetCents: toCents(m.budgets[0]?.budgetAmount) }));
 }
 
+export interface PotBalances {
+  HOME: Cents;
+  OUTING: Cents;
+  SHOPPING: Cents;
+  /** Starting balance + money received without a pot. */
+  generalCents: Cents;
+  totalCents: Cents;
+}
+
+/**
+ * Money pots: each pot's balance = money added to that pot − that type's
+ * expenses (all time). The total is the household balance, so the pots plus
+ * the general amount always add up to it.
+ */
+export async function getPotBalances(household: HouseholdContext): Promise<PotBalances> {
+  const [received, spent] = await Promise.all([
+    prisma.income.groupBy({ by: ["pot"], where: { householdId: household.id }, _sum: { amount: true } }),
+    prisma.expense.groupBy({ by: ["type"], where: { householdId: household.id }, _sum: { amount: true } }),
+  ]);
+  const into = (pot: ExpenseTypeKey | null) => toCents(received.find((r) => r.pot === pot)?._sum.amount);
+  const out = (type: ExpenseTypeKey) => toCents(spent.find((r) => r.type === type)?._sum.amount);
+  const HOME = into("HOME") - out("HOME");
+  const OUTING = into("OUTING") - out("OUTING");
+  const SHOPPING = into("SHOPPING") - out("SHOPPING");
+  const generalCents = household.startingBalanceCents + into(null);
+  return { HOME, OUTING, SHOPPING, generalCents, totalCents: generalCents + HOME + OUTING + SHOPPING };
+}
+
 /** Totals by expense type plus money received, for any date range. */
 export async function getPeriodTotals(householdId: string, range: DateRange): Promise<PeriodTotals> {
   const [byType, received] = await Promise.all([
@@ -142,8 +170,8 @@ export async function getDashboard(household: HouseholdContext, year: number, mo
   const trendStart = shiftMonth(year, month, -5);
   const symbol = household.currencySymbol;
 
-  const [balanceCents, current, previous, trend, home, shopping, recent, largest, outingCount] = await Promise.all([
-    getBalanceCents(household),
+  const [pots, current, previous, trend, home, shopping, recent, largest, outingCount] = await Promise.all([
+    getPotBalances(household),
     getPeriodTotals(household.id, range),
     getPeriodTotals(household.id, monthRange(prev.year, prev.month)),
     getMonthlySeries(household.id, trendStart, 6),
@@ -173,7 +201,8 @@ export async function getDashboard(household: HouseholdContext, year: number, mo
   return {
     year,
     month,
-    balanceCents,
+    balanceCents: pots.totalCents,
+    pots,
     current,
     previous,
     trend,

@@ -147,9 +147,9 @@ export async function buildWorkbook(household: HouseholdContext, req: ExportRequ
     XLSX.utils.book_append_sheet(
       wb,
       sheet(
-        ["Date", "Source", "Description", "Amount", "Balance"],
-        of("RECEIVED").map((r) => [d(r.date), r.source ?? "", r.description, m(r.amountCents), m(r.balanceCents)]),
-        [13, 18, 34, 15, 16],
+        ["Date", "Added to", "Source", "Description", "Amount", "Balance"],
+        of("RECEIVED").map((r) => [d(r.date), r.pot ? TYPE_LABEL[r.pot] : "General", r.source ?? "", r.description, m(r.amountCents), m(r.balanceCents)]),
+        [13, 12, 18, 34, 15, 16],
         currencyFormat,
       ),
       "Received Money",

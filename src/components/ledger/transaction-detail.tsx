@@ -40,7 +40,10 @@ export function TransactionDetail({ row, onClose }: { row: TransactionRow; onClo
     if (row.numberOfPeople) items.push(["People", String(row.numberOfPeople)]);
     if (row.paymentMethod) items.push(["Payment", row.paymentMethod]);
   }
-  if (isIncome) items.push(["Source", row.source ?? "—"]);
+  if (isIncome) {
+    items.push(["Added to", row.pot ? `${TYPE_META[row.pot].label} balance` : "General"]);
+    items.push(["Source", row.source ?? "—"]);
+  }
   items.push(["Description", row.description || "—"]);
   if (row.notes) items.push(["Notes", row.notes]);
   items.push(["Balance after", money(row.balanceCents)]);

@@ -54,6 +54,7 @@ export function targetLabel(row: TransactionRow): string {
   if (row.type === "HOME") return row.categoryName ?? "Uncategorised";
   if (row.type === "SHOPPING") return row.memberName ?? "—";
   if (row.type === "OUTING") return row.place ?? "Outing";
+  if (row.pot) return `${TYPE_META[row.pot].label} · ${row.source ?? "Received"}`;
   return row.source ?? "Money received";
 }
 

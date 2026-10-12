@@ -44,7 +44,7 @@ export async function buildBackup(householdId: string): Promise<Backup> {
       sortOrder: s.sortOrder,
       budgets: s.budgets.map((b) => ({ year: b.year, budgetAmount: m(b.budgetAmount) })),
     })),
-    incomes: incomes.map((i) => ({ date: iso(i.date), amount: m(i.amount), description: i.description, source: i.source })),
+    incomes: incomes.map((i) => ({ date: iso(i.date), amount: m(i.amount), description: i.description, source: i.source, pot: i.pot })),
     expenses: expenses.map((e) => ({
       type: e.type,
       date: iso(e.date),

@@ -27,6 +27,7 @@ interface RawLedgerRow {
   numberOfPeople: number | null;
   paymentMethod: string | null;
   source: string | null;
+  pot: string | null;
   homeCategoryId: string | null;
   categoryName: string | null;
   shoppingMemberId: string | null;
@@ -45,7 +46,7 @@ function ledgerCte(householdId: string, startingBalanceCents: number) {
   return Prisma.sql`
     WITH ledger AS (
       SELECT e.id, 'EXPENSE'::text AS kind, e.type::text AS type, e.amount, e.date,
-             e.description, e.notes, e.place, e."numberOfPeople", e."paymentMethod", NULL::text AS source,
+             e.description, e.notes, e.place, e."numberOfPeople", e."paymentMethod", NULL::text AS source, NULL::text AS pot,
              e."homeCategoryId", hc.name AS "categoryName", e."shoppingMemberId", sm.name AS "memberName",
              -e.amount AS delta, e."createdAt", e."updatedAt"
         FROM "Expense" e
@@ -54,7 +55,7 @@ function ledgerCte(householdId: string, startingBalanceCents: number) {
        WHERE e."householdId" = ${householdId}
       UNION ALL
       SELECT i.id, 'INCOME'::text, 'RECEIVED'::text, i.amount, i.date,
-             i.description, NULL, NULL, NULL, NULL, i.source,
+             i.description, NULL, NULL, NULL, NULL, i.source, i.pot::text,
              NULL, NULL, NULL, NULL,
              i.amount, i."createdAt", i."updatedAt"
         FROM "Income" i
@@ -123,6 +124,7 @@ function mapRow(r: RawLedgerRow): TransactionRow {
     numberOfPeople: r.numberOfPeople,
     paymentMethod: r.paymentMethod,
     source: r.source,
+    pot: (r.pot as TransactionRow["pot"]) ?? null,
     homeCategoryId: r.homeCategoryId,
     categoryName: r.categoryName,
     shoppingMemberId: r.shoppingMemberId,

@@ -81,6 +81,7 @@ export const incomeSchema = z.object({
   date: dateField,
   description: optionalText(200),
   source: optionalText(60),
+  pot: z.enum(EXPENSE_TYPES, { error: "Choose where this money goes: Home, Outing or Shopping." }),
   clientId: z.string().max(64).optional(),
 });
 export type IncomeInput = z.input<typeof incomeSchema>;

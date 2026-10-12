@@ -44,6 +44,8 @@ export interface TransactionRow {
   numberOfPeople: number | null;
   paymentMethod: string | null;
   source: string | null;
+  /** Money received only: which pot it was added to. */
+  pot: ExpenseType | null;
   homeCategoryId: string | null;
   categoryName: string | null;
   shoppingMemberId: string | null;
@@ -82,6 +84,7 @@ export interface DashboardData {
   year: number;
   month: number;
   balanceCents: number;
+  pots: { HOME: number; OUTING: number; SHOPPING: number; generalCents: number; totalCents: number };
   current: PeriodTotals;
   previous: PeriodTotals;
   trend: MonthTotals[];

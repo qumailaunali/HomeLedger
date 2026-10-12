@@ -94,6 +94,7 @@ async function insertIncome(householdId: string, raw: IncomeInput) {
     date: parseIsoDate(input.date)!,
     description: input.description?.trim() || input.source?.trim() || "Money received",
     source: input.source?.trim() || null,
+    pot: input.pot,
   };
   try {
     const created = await prisma.income.create({ data: { ...data, householdId, clientId }, select: { id: true } });
@@ -185,6 +186,7 @@ export async function updateIncome(id: string, raw: IncomeInput): Promise<Action
         date: parseIsoDate(input.date)!,
         description: input.description?.trim() || input.source?.trim() || "Money received",
         source: input.source?.trim() || null,
+        pot: input.pot,
       },
     });
     if (result.count === 0) throw new UserError("This record no longer exists.");

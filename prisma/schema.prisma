@@ -109,6 +109,8 @@ model Income {
   date        DateTime  @db.Date
   description String
   source      String?
+  // Which money pot this was added to (Home / Outing / Shopping). Null = general.
+  pot         ExpenseType?
   // Client-generated idempotency key so offline-queued records never duplicate.
   clientId    String?
   createdAt   DateTime  @default(now())
@@ -116,6 +118,7 @@ model Income {
 
   @@unique([householdId, clientId])
   @@index([householdId, date])
+  @@index([householdId, pot])
 }
 
 model Expense {

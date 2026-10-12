@@ -39,7 +39,7 @@ export function CategoriesManager({ categories }: { categories: SettingsCategory
         <div>
           <CardTitle>Home categories</CardTitle>
           <CardDescription>
-            Expected monthly total for active categories: <span className="tabular font-medium text-foreground">{money(total)}</span>
+            Add, remove and reorder categories. A monthly budget is optional{total > 0 ? " · budgets total " : ""}{total > 0 && <span className="tabular font-medium text-foreground">{money(total)}</span>}
           </CardDescription>
         </div>
         <Button size="sm" onClick={() => setEditing("new")}>
@@ -53,7 +53,7 @@ export function CategoriesManager({ categories }: { categories: SettingsCategory
           <ReorderList
             items={items}
             renderMeta={(c) =>
-              `${c.expectedCents ? `Expected ${money(c.expectedCents)} / month` : "No expected amount"} · ${c.usedBy} expense${c.usedBy === 1 ? "" : "s"}`
+              `${c.expectedCents ? `Budget ${money(c.expectedCents)} / month` : "No budget"} · ${c.usedBy} expense${c.usedBy === 1 ? "" : "s"}`
             }
             onReorder={async (ids) => {
               setOrder(ids);
@@ -102,7 +102,7 @@ export function CategoriesManager({ categories }: { categories: SettingsCategory
         open={!!deleting}
         onOpenChange={(o) => !o && setDeleting(null)}
         title="Delete category?"
-        details={deleting ? { label: deleting.name, amount: deleting.expectedCents ? `Expected ${money(deleting.expectedCents)}` : undefined } : null}
+        details={deleting ? { label: deleting.name, amount: deleting.expectedCents ? `Budget ${money(deleting.expectedCents)}` : undefined } : null}
         onConfirm={async () => (deleting ? report(await deleteCategory(deleting.id).catch(() => null), "Category deleted") : true)}
       />
     </Card>
@@ -120,7 +120,7 @@ function CategoryForm({ category, onDone }: { category: SettingsCategory | null;
       <Field label="Name" htmlFor="cat-name" error={formState.errors.name?.message}>
         <Input id="cat-name" autoFocus placeholder="e.g. Internet" {...register("name")} />
       </Field>
-      <Field label="Expected monthly amount" htmlFor="cat-amount" error={formState.errors.expectedMonthlyAmount?.message} hint="Leave empty if it varies a lot.">
+      <Field label="Monthly budget" htmlFor="cat-amount" optional error={formState.errors.expectedMonthlyAmount?.message} hint="Leave empty for no budget.">
         <AmountInput id="cat-amount" size="default" symbol={prefs.currencySymbol} {...register("expectedMonthlyAmount")} />
       </Field>
       <Button type="submit" className="sm:ml-auto" disabled={formState.isSubmitting}>

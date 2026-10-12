@@ -42,6 +42,8 @@ export function Dashboard({ data, userName }: { data: DashboardData; userName: s
 
   return (
     <>
+      <TypeTabs current={data.current} previous={data.previous} year={data.year} month={data.month} />
+
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h1 className="text-[22px] font-semibold tracking-tight sm:text-2xl">
@@ -73,33 +75,36 @@ export function Dashboard({ data, userName }: { data: DashboardData; userName: s
         </ul>
       )}
 
-      {/* Headline numbers */}
-      <section aria-label="Summary" className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      {/* Balances: total and each money pot */}
+      <section aria-label="Balances" className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <SummaryCard
-          label="Current Balance"
+          label="Total Available Balance"
           cents={data.balanceCents}
           tone="auto"
           icon={Wallet}
           iconClass="bg-positive-soft text-positive"
           className="col-span-2 lg:col-span-1"
-          hint="Available right now"
+          hint={
+            <span className="flex flex-col gap-0.5">
+              <span>
+                {monthName.slice(0, 3)}: received {money(data.current.receivedCents)} · spent {money(data.current.spentCents)}
+              </span>
+              <ChangeHint change={spentChange} previous={data.previous.spentCents} />
+            </span>
+          }
         />
-        <SummaryCard label={`Received in ${monthName.slice(0, 3)}`} cents={data.current.receivedCents} icon={ArrowDownLeft} hint={`${money(data.previous.receivedCents)} last month`} />
-        <SummaryCard
-          label={`Spent in ${monthName.slice(0, 3)}`}
-          cents={data.current.spentCents}
-          icon={Receipt}
-          hint={<ChangeHint change={spentChange} previous={data.previous.spentCents} />}
-        />
-        <SummaryCard
-          label={`Shopping budget left ${data.year}`}
-          cents={data.shoppingTotals.remainingCents}
-          tone={data.shoppingTotals.remainingCents < 0 ? "danger" : "default"}
-          icon={TYPE_META.SHOPPING.icon}
-          iconClass={cn(TYPE_META.SHOPPING.soft, TYPE_META.SHOPPING.text)}
-          hint={`of ${money(data.shoppingTotals.budgetCents)} yearly`}
-          href={`/shopping?year=${data.year}`}
-        />
+        {(["HOME", "OUTING", "SHOPPING"] as const).map((t) => (
+          <SummaryCard
+            key={t}
+            label={`${TYPE_META[t].label} balance`}
+            cents={data.pots[t]}
+            tone={data.pots[t] < 0 ? "danger" : "default"}
+            icon={TYPE_META[t].icon}
+            iconClass={cn(TYPE_META[t].soft, TYPE_META[t].text)}
+            hint={data.pots[t] < 0 ? "Spent more than was added" : "Money added − expenses"}
+            className={t === "SHOPPING" ? "col-span-2 lg:col-span-1" : undefined}
+          />
+        ))}
       </section>
 
       {/* Quick actions */}
@@ -116,13 +121,6 @@ export function Dashboard({ data, userName }: { data: DashboardData; userName: s
         <Link href="/export" className={cn(buttonVariants({ variant: "outline", size: "lg" }), "col-span-2 h-12 sm:col-span-1")}>
           <Download /> Export
         </Link>
-      </section>
-
-      {/* Home / Shopping / Outing tiles */}
-      <section aria-label="Spending by type" className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-        <TypeTile type="HOME" href="/home" current={data.current} previous={data.previous} extra={`Budget ${money(data.homeTotals.budgetCents)}`} />
-        <TypeTile type="SHOPPING" href="/shopping" current={data.current} previous={data.previous} extra={`${money(data.shoppingTotals.spentCents)} this year`} />
-        <TypeTile type="OUTING" href="/outing" current={data.current} previous={data.previous} extra={`${data.outingCount} outing${data.outingCount === 1 ? "" : "s"}`} />
       </section>
 
       <div className="grid gap-4 lg:grid-cols-5">
@@ -237,43 +235,58 @@ function ChangeHint({ change, previous }: { change: number | null; previous: num
   );
 }
 
-function TypeTile({
-  type,
-  href,
+/** Floating header: Home · Outing · Shopping with this month's totals. */
+function TypeTabs({
   current,
   previous,
-  extra,
+  year,
+  month,
 }: {
-  type: ExpenseType;
-  href: string;
   current: PeriodTotals;
   previous: PeriodTotals;
-  extra: string;
+  year: number;
+  month: number;
 }) {
-  const { money, openExpense } = useApp();
-  const key = type === "HOME" ? "homeCents" : type === "SHOPPING" ? "shoppingCents" : "outingCents";
-  const change = percentChange(current[key], previous[key]);
+  const { money } = useApp();
+  const tabs: { type: ExpenseType; href: string; key: "homeCents" | "outingCents" | "shoppingCents" }[] = [
+    { type: "HOME", href: `/home?year=${year}&month=${month}`, key: "homeCents" },
+    { type: "OUTING", href: `/outing?year=${year}&month=${month}`, key: "outingCents" },
+    { type: "SHOPPING", href: `/shopping?year=${year}`, key: "shoppingCents" },
+  ];
   return (
-    <div className="relative flex items-center gap-3 rounded-2xl border border-border/70 bg-card p-4 shadow-[0_1px_2px_rgb(0_0_0/0.04)] transition-shadow hover:shadow-md">
-      <TypeIcon type={type} size="lg" />
-      <Link href={href} className="min-w-0 flex-1 after:absolute after:inset-0 after:rounded-2xl focus-visible:outline-none">
-        <span className="block text-[13px] font-medium text-muted-foreground">{TYPE_META[type].label}</span>
-        <span className="tabular block text-lg font-semibold">{money(current[key])}</span>
-        <span className="block truncate text-xs text-muted-foreground">
-          {extra}
-          {change !== null && ` · ${change > 0 ? "+" : ""}${change}% vs last month`}
-        </span>
-      </Link>
-      <Button
-        variant="secondary"
-        size="icon"
-        className="relative z-[1] rounded-xl"
-        aria-label={`Add ${TYPE_META[type].label} expense`}
-        onClick={() => openExpense({ type })}
-      >
-        <Plus />
-      </Button>
-    </div>
+    <nav
+      aria-label="Expense types"
+      className="sticky top-[calc(3.5rem+env(safe-area-inset-top)+0.5rem)] z-10 rounded-2xl border border-border/70 bg-card/90 p-1.5 shadow-lg shadow-black/5 backdrop-blur-md"
+    >
+      <ul className="grid grid-cols-3 gap-1">
+        {tabs.map((t) => {
+          const change = percentChange(current[t.key], previous[t.key]);
+          const Icon = TYPE_META[t.type].icon;
+          return (
+            <li key={t.type}>
+              <Link
+                href={t.href}
+                className="flex flex-col items-center gap-0.5 rounded-xl px-2 py-2 text-center transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 sm:flex-row sm:gap-3 sm:px-3 sm:text-left"
+              >
+                <span className={cn("flex size-8 shrink-0 items-center justify-center rounded-lg", TYPE_META[t.type].soft)} aria-hidden>
+                  <Icon className={cn("size-4", TYPE_META[t.type].text)} />
+                </span>
+                <span className="min-w-0">
+                  <span className="block text-xs font-medium text-muted-foreground sm:text-[13px]">{TYPE_META[t.type].label}</span>
+                  <span className="tabular block truncate text-sm font-semibold sm:text-base">{money(current[t.key])}</span>
+                  {change !== null && (
+                    <span className="hidden text-[11px] text-muted-foreground sm:block">
+                      {change > 0 ? "+" : ""}
+                      {change}% vs last month
+                    </span>
+                  )}
+                </span>
+              </Link>
+            </li>
+          );
+        })}
+      </ul>
+    </nav>
   );
 }
 
@@ -343,7 +356,8 @@ export function MonthlySummary({
 function HomeBudgetOverview({ data }: { data: DashboardData }) {
   // Show the categories that need attention first.
   const rank = { over: 0, near: 1, within: 2, none: 3 } as const;
-  const lines = [...data.home].filter((l) => l.budgetCents > 0 || l.spentCents > 0).sort((a, b) => rank[a.status] - rank[b.status] || b.percent - a.percent).slice(0, 5);
+  if (!data.home.some((l) => l.budgetCents > 0)) return null;
+  const lines = [...data.home].filter((l) => l.budgetCents > 0).sort((a, b) => rank[a.status] - rank[b.status] || b.percent - a.percent).slice(0, 5);
   return (
     <Card>
       <CardHeader>

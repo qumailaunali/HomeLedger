@@ -43,6 +43,7 @@ export const backupSchema = z.object({
       amount: money,
       description: z.string().max(200),
       source: z.string().max(60).nullable(),
+      pot: z.enum(["HOME", "SHOPPING", "OUTING"]).nullable().optional(),
     }),
   ),
   expenses: z.array(

@@ -35,6 +35,8 @@ const HOME_CATEGORIES: [string, number][] = [
   ["Cable", 400],
 ];
 
+const BUDGETED = new Set(["Food", "Internet"]);
+
 const MEMBERS: [string, Record<number, number>][] = [
   ["Sarah", { 2025: 35000, 2026: 35000 }],
   ["Qumail", { 2025: 35000, 2026: 40000 }],
@@ -110,7 +112,8 @@ async function main() {
   const cat = new Map<string, string>();
   for (const [i, [name, expected]] of HOME_CATEGORIES.entries()) {
     const c = await prisma.homeCategory.create({
-      data: { householdId: household.id, name, expectedMonthlyAmount: `${expected}.00`, sortOrder: i + 1 },
+      // Budgets are optional: only a couple of categories get one in the sample data.
+      data: { householdId: household.id, name, expectedMonthlyAmount: BUDGETED.has(name) ? `${expected}.00` : "0.00", sortOrder: i + 1 },
     });
     cat.set(name, c.id);
   }
@@ -134,9 +137,12 @@ async function main() {
   const incomes = [];
   const expenses = [];
   for (const [y, m, lastDay] of months) {
-    incomes.push({ householdId: household.id, amount: "170000.00", date: day(y, m, 1), description: "House money", source: "House money" });
+    // House money split into the three pots
+    incomes.push({ householdId: household.id, amount: "130000.00", date: day(y, m, 1), description: "House money", source: "House money", pot: "HOME" as const });
+    incomes.push({ householdId: household.id, amount: "15000.00", date: day(y, m, 1), description: "Outing money", source: "House money", pot: "OUTING" as const });
+    incomes.push({ householdId: household.id, amount: "25000.00", date: day(y, m, 1), description: "Shopping money", source: "House money", pot: "SHOPPING" as const });
     if (m % 3 === 0) {
-      incomes.push({ householdId: household.id, amount: "25000.00", date: day(y, m, 15), description: "Extra cash", source: "Cash received" });
+      incomes.push({ householdId: household.id, amount: "25000.00", date: day(y, m, 15), description: "Extra cash", source: "Cash received", pot: "HOME" as const });
     }
 
     for (const [name, expected] of HOME_CATEGORIES) {
