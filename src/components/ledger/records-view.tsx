@@ -173,14 +173,26 @@ export function RecordsView({
             </NativeSelect>
           )}
           {showMember && (
-            <NativeSelect aria-label="Person" value={query.filters.memberId ?? ""} onChange={(e) => set({ member: e.target.value })} className="h-9 w-auto text-sm">
-              <option value="">Everyone</option>
-              {members.map((m) => (
-                <option key={m.id} value={m.id}>
-                  {m.name}
-                </option>
-              ))}
-            </NativeSelect>
+            <div role="radiogroup" aria-label="Person" className="-mx-1 flex max-w-full gap-1.5 overflow-x-auto px-1 pb-0.5">
+              {[{ id: "", name: "Everyone" }, ...members].map((m) => {
+                const active = (query.filters.memberId ?? "") === m.id;
+                return (
+                  <button
+                    key={m.id || "all"}
+                    type="button"
+                    role="radio"
+                    aria-checked={active}
+                    onClick={() => set({ member: m.id || null })}
+                    className={cn(
+                      "h-9 shrink-0 rounded-xl border px-3.5 text-sm font-medium whitespace-nowrap transition-colors focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50",
+                      active ? "border-primary bg-primary text-primary-foreground shadow-sm" : "bg-card hover:bg-accent",
+                    )}
+                  >
+                    {m.name}
+                  </button>
+                );
+              })}
+            </div>
           )}
           {hasFilters && (
             <Button
