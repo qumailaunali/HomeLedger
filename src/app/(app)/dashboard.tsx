@@ -7,10 +7,8 @@ import {
   ArrowDownRight,
   ArrowUpRight,
   CircleAlert,
-  Download,
   Plus,
   Receipt,
-  TableProperties,
   Wallet,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -24,7 +22,7 @@ import { MonthSelector } from "@/components/ledger/month-selector";
 import { TransactionList } from "@/components/ledger/transaction-list";
 import { TypeTabs } from "@/components/ledger/type-tabs";
 import { TYPE_META, TypeIcon, primaryLabel } from "@/components/ledger/type-meta";
-import { BreakdownDonut, SpendingTrendChart } from "@/components/charts/charts";
+import { SpendingTrendChart } from "@/components/charts/charts";
 import type { DashboardData, PeriodTotals } from "@/types";
 
 function greeting(timeZone: string) {
@@ -109,37 +107,41 @@ export function Dashboard({ data, userName }: { data: DashboardData; userName: s
       </section>
 
       {/* Quick actions */}
-      <section aria-label="Quick actions" className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
-        <Button size="xl" className="col-span-2 sm:min-w-48" onClick={() => openExpense()}>
+      <section aria-label="Quick actions" className="grid grid-cols-2 gap-2 sm:flex">
+        <Button size="xl" className="sm:min-w-48" onClick={() => openExpense()}>
           <Plus className="size-5" /> Add Expense
         </Button>
-        <Button size="lg" variant="positive" className="h-12" onClick={() => openIncome()}>
+        <Button size="xl" variant="positive" className="sm:min-w-44" onClick={() => openIncome()}>
           <ArrowDownLeft /> Receive Money
         </Button>
-        <Link href="/records" className={cn(buttonVariants({ variant: "outline", size: "lg" }), "h-12")}>
-          <TableProperties /> View Records
-        </Link>
-        <Link href="/export" className={cn(buttonVariants({ variant: "outline", size: "lg" }), "col-span-2 h-12 sm:col-span-1")}>
-          <Download /> Export
-        </Link>
       </section>
 
-      <div className="grid gap-4 lg:grid-cols-5">
-        <SpendingTrendChart
-          data={data.trend}
-          title="Spending overview"
-          description="Last 6 months by type"
-          className="lg:col-span-3"
-        />
-        <BreakdownDonut
-          homeCents={data.current.homeCents}
-          shoppingCents={data.current.shoppingCents}
-          outingCents={data.current.outingCents}
-          title="Expense breakdown"
-          description={formatMonthYear(data.year, data.month)}
-          className="lg:col-span-2"
-        />
-      </div>
+      <Card>
+        <CardHeader>
+          <CardTitle>Recent transactions</CardTitle>
+          <Link href="/records" className="text-xs font-medium text-muted-foreground hover:text-foreground">
+            All records
+          </Link>
+        </CardHeader>
+        <CardContent className="pt-2">
+          {hasActivity ? (
+            <TransactionList rows={data.recent} />
+          ) : (
+            <EmptyState
+              icon={Receipt}
+              title={`No expenses recorded for ${monthName} yet.`}
+              description="Start with today's spending — it takes a few seconds."
+              action={
+                <Button onClick={() => openExpense()}>
+                  <Plus /> Add your first expense
+                </Button>
+              }
+            />
+          )}
+        </CardContent>
+      </Card>
+
+      <SpendingTrendChart data={data.trend} title="Spending overview" description="Last 6 months by type" />
 
       <div className="grid gap-4 lg:grid-cols-2">
         <MonthlySummary title={formatMonthYear(data.year, data.month)} totals={data.current} previous={data.previous} prevLabel={MONTH_NAMES[prev.month - 1]} />
@@ -164,62 +166,36 @@ export function Dashboard({ data, userName }: { data: DashboardData; userName: s
         </Card>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-5">
-        <Card className="lg:col-span-3">
+      <div className="grid gap-4 lg:grid-cols-2">
+        <Card>
           <CardHeader>
-            <CardTitle>Recent transactions</CardTitle>
-            <Link href="/records" className="text-xs font-medium text-muted-foreground hover:text-foreground">
-              All records
-            </Link>
+            <div>
+              <CardTitle>Largest expenses</CardTitle>
+              <CardDescription>{formatMonthYear(data.year, data.month)}</CardDescription>
+            </div>
           </CardHeader>
           <CardContent className="pt-2">
-            {hasActivity ? (
-              <TransactionList rows={data.recent} />
+            {data.largest.length === 0 ? (
+              <p className="py-4 text-center text-sm text-muted-foreground">No expenses this month.</p>
             ) : (
-              <EmptyState
-                icon={Receipt}
-                title={`No expenses recorded for ${monthName} yet.`}
-                description="Start with today's spending — it takes a few seconds."
-                action={
-                  <Button onClick={() => openExpense()}>
-                    <Plus /> Add your first expense
-                  </Button>
-                }
-              />
+              <ol className="grid gap-1">
+                {data.largest.map((r, i) => (
+                  <li key={r.id} className="flex items-center gap-3 py-1.5">
+                    <span className="tabular w-4 text-xs text-muted-foreground">{i + 1}</span>
+                    <TypeIcon type={r.type} size="sm" />
+                    <span className="min-w-0 flex-1 truncate text-sm">{primaryLabel(r)}</span>
+                    <Money cents={r.amountCents} className="text-sm font-medium" />
+                  </li>
+                ))}
+              </ol>
             )}
           </CardContent>
         </Card>
 
-        <div className="grid content-start gap-4 lg:col-span-2">
-          <Card>
-            <CardHeader>
-              <div>
-                <CardTitle>Largest expenses</CardTitle>
-                <CardDescription>{formatMonthYear(data.year, data.month)}</CardDescription>
-              </div>
-            </CardHeader>
-            <CardContent className="pt-2">
-              {data.largest.length === 0 ? (
-                <p className="py-4 text-center text-sm text-muted-foreground">No expenses this month.</p>
-              ) : (
-                <ol className="grid gap-1">
-                  {data.largest.map((r, i) => (
-                    <li key={r.id} className="flex items-center gap-3 py-1.5">
-                      <span className="tabular w-4 text-xs text-muted-foreground">{i + 1}</span>
-                      <TypeIcon type={r.type} size="sm" />
-                      <span className="min-w-0 flex-1 truncate text-sm">{primaryLabel(r)}</span>
-                      <Money cents={r.amountCents} className="text-sm font-medium" />
-                    </li>
-                  ))}
-                </ol>
-              )}
-            </CardContent>
-          </Card>
-
-          <HomeBudgetOverview data={data} />
-        </div>
+        <HomeBudgetOverview data={data} />
       </div>
     </>
+
   );
 }
 
