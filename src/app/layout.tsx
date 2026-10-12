@@ -1,56 +1,42 @@
 import type { Metadata, Viewport } from "next";
-import "./globals.css";
-import { ThemeProvider } from "@/components/theme-provider";
+import { ThemeProvider } from "next-themes";
 import { ToastProvider } from "@/components/ui/toast";
-import { PwaRegister } from "@/components/pwa-register";
+import { ServiceWorkerRegister } from "@/components/app/service-worker-register";
+import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "HomeLedger - Household Expense Tracker",
-  description: "Modern, simple household expense management and yearly tracking system.",
-  manifest: "/manifest.json",
+  title: { default: "Home Expense Tracker", template: "%s · Home Expense Tracker" },
+  description: "Simple household expense tracking: balance, budgets, records and exports.",
+  applicationName: "Home Expense Tracker",
+  appleWebApp: { capable: true, title: "Expenses", statusBarStyle: "default" },
+  formatDetection: { telephone: false },
   icons: {
     icon: [
-      { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
-      { url: "/logo.png", sizes: "512x512", type: "image/png" },
+      { url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icons/icon-512.png", sizes: "512x512", type: "image/png" },
     ],
-    apple: [
-      { url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
-    ],
-  },
-  appleWebApp: {
-    capable: true,
-    statusBarStyle: "default",
-    title: "HomeLedger",
+    apple: [{ url: "/icons/apple-touch-icon.png", sizes: "180x180" }],
   },
 };
 
 export const viewport: Viewport = {
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
-    { media: "(prefers-color-scheme: dark)", color: "#090d16" },
-  ],
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
+  viewportFit: "cover",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#f9fafb" },
+    { media: "(prefers-color-scheme: dark)", color: "#14161c" },
+  ],
 };
 
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className="bg-slate-50/50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 min-h-screen">
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="system"
-          enableSystem
-          disableTransitionOnChange
-        >
+      <body>
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
           <ToastProvider>
-            <PwaRegister />
             {children}
+            <ServiceWorkerRegister />
           </ToastProvider>
         </ThemeProvider>
       </body>

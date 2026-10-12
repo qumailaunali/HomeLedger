@@ -1,105 +1,98 @@
-export type ExpenseType = "HOME" | "SHOPPING" | "OUTING";
+import type { BudgetLine, MonthTotals, PeriodTotals, Warning } from "@/lib/calculations";
+import type { IsoDate } from "@/lib/dates";
 
-export interface HouseholdData {
-  id: string;
+/** All money values are integer cents. All dates are "YYYY-MM-DD". */
+
+export type ExpenseType = "HOME" | "SHOPPING" | "OUTING";
+export type TransactionType = ExpenseType | "RECEIVED";
+
+export interface HouseholdPrefs {
   name: string;
   currency: string;
   currencySymbol: string;
-  startingBalance: number;
   dateFormat: string;
+  timezone: string;
+  today: IsoDate;
 }
 
-export interface HomeCategoryItem {
+export interface CategoryOption {
   id: string;
   name: string;
-  expectedMonthlyAmount: number;
-  isActive: boolean;
-  sortOrder: number;
-  icon?: string | null;
+  expectedCents: number;
+  /** Spent in the current calendar month (for quick-entry hints). */
+  spentCents?: number;
 }
 
-export interface ShoppingMemberItem {
+export interface MemberOption {
   id: string;
   name: string;
-  isActive: boolean;
-  sortOrder: number;
-  budgets?: {
-    id: string;
-    year: number;
-    budgetAmount: number;
-  }[];
+  /** Budget for the current year. */
+  budgetCents: number;
+  /** Spent in the current year (for quick-entry hints). */
+  spentCents?: number;
 }
 
-export interface TransactionItem {
+export interface TransactionRow {
   id: string;
-  type: "HOME" | "SHOPPING" | "OUTING" | "RECEIVED";
-  amount: number;
-  date: string; // ISO date
+  kind: "EXPENSE" | "INCOME";
+  type: TransactionType;
+  amountCents: number;
+  date: IsoDate;
   description: string;
-  notes?: string | null;
-  // Relations
-  homeCategory?: { id: string; name: string } | null;
-  shoppingMember?: { id: string; name: string } | null;
-  place?: string | null;
-  numberOfPeople?: number | null;
-  paymentMethod?: string | null;
-  source?: string | null; // For received money
-  balanceAfter?: number;
+  notes: string | null;
+  place: string | null;
+  numberOfPeople: number | null;
+  paymentMethod: string | null;
+  source: string | null;
+  homeCategoryId: string | null;
+  categoryName: string | null;
+  shoppingMemberId: string | null;
+  memberName: string | null;
+  /** Household balance right after this transaction. */
+  balanceCents: number;
+  /** Shopping only: member's yearly budget left after this purchase. */
+  budgetRemainingCents: number | null;
+  createdAt: string;
+  updatedAt: string;
 }
 
-export interface DashboardSummary {
-  household: HouseholdData;
-  selectedMonth: number;
-  selectedYear: number;
-  currentBalance: number;
-  monthReceived: number;
-  monthSpent: number;
-  netMonthChange: number;
-  homeSpent: number;
-  shoppingSpent: number;
-  outingSpent: number;
-  homeBudgetTotal: number;
-  recentTransactions: TransactionItem[];
-  monthlyTrend: {
-    monthName: string;
-    month: number;
-    year: number;
-    spent: number;
-    received: number;
-    home: number;
-    shopping: number;
-    outing: number;
-  }[];
-  shoppingBudgetsProgress: {
-    memberId: string;
-    name: string;
-    yearlyBudget: number;
-    spentYear: number;
-    remainingBudget: number;
-    percentage: number;
-    isOverBudget: boolean;
-    overAmount: number;
-  }[];
-  homeCategoriesProgress: {
-    categoryId: string;
-    name: string;
-    expected: number;
-    spent: number;
-    remaining: number;
-    isOverBudget: boolean;
-    percentage: number;
-  }[];
-  outingSummary: {
-    totalSpentMonth: number;
-    totalSpentYear: number;
-    countMonth: number;
-    countYear: number;
-    averageCost: number;
-    largestOuting: {
-      place: string;
-      amount: number;
-      date: string;
-    } | null;
-  };
-  warnings: string[];
+export interface LedgerFilters {
+  from?: IsoDate;
+  to?: IsoDate;
+  type?: TransactionType | "ALL" | "EXPENSES";
+  categoryId?: string;
+  memberId?: string;
+  search?: string;
+  sort?: "date" | "amount";
+  dir?: "asc" | "desc";
+  page?: number;
+  pageSize?: number;
 }
+
+export interface LedgerPage {
+  rows: TransactionRow[];
+  total: number;
+  page: number;
+  pageSize: number;
+  spentCents: number;
+  receivedCents: number;
+}
+
+export interface DashboardData {
+  year: number;
+  month: number;
+  balanceCents: number;
+  current: PeriodTotals;
+  previous: PeriodTotals;
+  trend: MonthTotals[];
+  home: BudgetLine[];
+  homeTotals: { budgetCents: number; spentCents: number; remainingCents: number };
+  shopping: BudgetLine[];
+  shoppingTotals: { budgetCents: number; spentCents: number; remainingCents: number };
+  recent: TransactionRow[];
+  largest: TransactionRow[];
+  outingCount: number;
+  warnings: Warning[];
+}
+
+export type { BudgetLine, MonthTotals, PeriodTotals, Warning };

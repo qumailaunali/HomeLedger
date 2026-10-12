@@ -1,146 +1,80 @@
-# HomeLedger 🏠💰
+# Home Expense Tracker (HomeLedger)
 
-A modern, fast, and elegant Household Expense Management Progressive Web Application built with **Next.js (App Router)**, **TypeScript**, **Tailwind CSS**, **Prisma ORM**, and **Neon PostgreSQL**.
+A household expense app that replaces the Excel sheet: quick daily entry, an always-correct balance, monthly Home budgets, yearly shopping budgets per family member, a spreadsheet-style ledger, analytics, Excel/CSV export and import, and an installable PWA.
 
-Designed to replace manual Excel-based household expense spreadsheets with zero friction, instant daily data entry, and automatic yearly budget tracking.
+**Stack:** Next.js 16 (App Router) · TypeScript · Tailwind CSS 4 · shadcn-style components on Radix · TanStack Table · Recharts · React Hook Form + Zod · Prisma · PostgreSQL (Neon) · SheetJS.
 
----
+## Getting started
 
-## 🌟 Key Features
-
-### 1. Unified Balance & Inflow System
-- **Automatic Current Balance Calculation**:
-  $$\text{Balance} = \text{Starting Balance} + \text{Total Money Received} - \text{Total Expenses}$$
-- Dedicated **"Receive Money"** inflow recording with sources (*Salary, House money, Cash received, Bank Transfer*).
-- Safe decimal financial arithmetic preventing floating-point inaccuracies.
-
-### 2. Three Specialized Expense Categories
-- **Home Expenses**: Regular household bills, groceries, van fees, petrol, maid salary (*Masi*), and maintenance.
-  - Expected monthly amounts with visual progress indicators (*Within Budget, Near Budget, Over Budget*).
-- **Shopping Expenses**: Personal yearly budgets tracked individually for each family member (*Sarah, Qumail, Taha, Farida, Others*).
-  - Multi-year budget tracking (*2025, 2026, 2027*) protecting historical data.
-  - Dedicated "Others" category for general household goods (*Eye glasses, medicine, car wash, etc.*).
-- **Outing & Dining Expenses**: Restaurant bills with venue, party size, payment method, average cost, and largest outing records.
-
-### 3. Rapid Daily Data Entry (< 5 seconds)
-- Prominent **`+ Add Expense`** button accessible from anywhere on mobile or desktop.
-- Auto-focusing amount field with mobile numeric keyboard support (`inputMode="decimal"`).
-- **"Save & Add Another"** for entering multiple expenses in rapid succession.
-- 1-click **Duplicate Expense** action.
-
-### 4. Excel-Style Spreadsheet View (`/records`)
-- Dedicated spreadsheet table view with sticky headers and zebra striping.
-- Running balance computed per transaction row.
-- Instant search across descriptions, categories, persons, places, and amounts.
-- Type filtering (*All, Home, Shopping, Outing, Received*).
-- Safe deletion modal with transaction details verification.
-- Modal editing with automatic recalculation of balances and budgets.
-
-### 5. Financial Analytics (`/analytics`)
-- 6-month spending and inflow comparison charts.
-- Donut expense division breakdown (*Home vs Shopping vs Outing*).
-- Home expense category ranking by percentage of total spend.
-- Family shopping budget comparison bar charts.
-- Outing analytics (*Average cost, largest outing, visit frequency*).
-
-### 6. Excel & CSV Export / Import (`/export`)
-- **Multi-Sheet Excel Workbook (`.xlsx`)**: Formatted worksheets for *Summary, Home, Shopping, Outing, and Received Money*.
-- Universal CSV export and full JSON database backups.
-- **CSV Import Workflow**: Upload $\rightarrow$ Validation Preview $\rightarrow$ Confirm & Import.
-
-### 7. Progressive Web App (PWA)
-- Installable on iPhone, Android, and Desktop as a standalone application.
-- Responsive mobile bottom navigation bar with elevated touch target.
-- Desktop sidebar with collapsible layout.
-- Light, Dark, and System theme support with persistence.
-
----
-
-## 🚀 Getting Started
-
-### Prerequisites
-- Node.js 18+ (tested on Node v24)
-- PostgreSQL database (Neon Serverless PostgreSQL connection configured)
-
-### 1. Environment Setup
-Create a `.env` file in the project root:
-```env
-# Neon PostgreSQL Connection URL
-DATABASE_URL="postgresql://neondb_owner:npg_biEN6n4WdyPu@ep-purple-wave-b3sjrqdu-pooler.c-4.ap-southeast-1.aws.neon.tech/neondb?sslmode=require"
-
-# Neon S3-compatible Object Storage
-AWS_ENDPOINT_URL_S3="https://br-dawn-hat-b3vn8i9v.storage.c-4.ap-southeast-1.aws.neon.tech"
-AWS_ACCESS_KEY_ID="nak_live_f6519b2f5c7d400fa09018798e909b8e"
-AWS_SECRET_ACCESS_KEY="nsk_live_95d78ee0e00a8bc4f6e102685dea067043b231489a6de792c7fabc4a9eaeb49f"
-AWS_REGION="ap-southeast-1"
-
-# JWT Secret
-JWT_SECRET="homeledger-production-ready-jwt-secret-key-999238"
-NEXT_PUBLIC_APP_URL="http://localhost:3000"
-```
-
-### 2. Database Sync & Realistic Data Seeding
-Synchronize Prisma schema with Neon PostgreSQL and seed realistic Pakistani household records:
 ```bash
-# Push schema to PostgreSQL
-npx prisma db push
-
-# Seed categories, shopping limits, income, and expenses
-npm run seed
-```
-
-### 3. Run Development Server
-```bash
+npm install
+cp .env.example .env          # then fill in DATABASE_URL and JWT_SECRET
+npm run db:push               # create / update the database schema
+npm run seed                  # optional: sample data (development only)
 npm run dev
 ```
-Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-### 4. Run Financial Unit Tests
-```bash
-npm run test
+Open http://localhost:3000. With no account yet, **Create an account** and the setup wizard asks for the household name, currency, Home categories, shopping members and yearly budgets. With seed data, sign in as `demo@homeledger.local` / `demo-password`.
+
+| Script | What it does |
+| --- | --- |
+| `npm run dev` / `build` / `start` | Develop, build, serve |
+| `npm test` | Financial calculation tests (balances, budgets, years, months, validation) |
+| `npm run typecheck` / `lint` | Static checks |
+| `npm run db:push` | Apply `prisma/schema.prisma` to the database |
+| `npm run seed` | Seed an **empty** database; `npm run seed -- --reset` wipes everything first. Refuses to run when `NODE_ENV=production`. |
+
+### Environment variables
+
+| Name | Required | Notes |
+| --- | --- | --- |
+| `DATABASE_URL` | yes | PostgreSQL connection string |
+| `JWT_SECRET` | yes in production | Random string, at least 32 characters (`openssl rand -base64 48`) |
+| `SIGNUP_ENABLED` | no | Sign-up is only open while there are no users. Set to `true` to allow more accounts (each gets its own private household). |
+
+Never commit `.env`. It is already ignored by git.
+
+## How the numbers work
+
+- **Money** is stored as `NUMERIC(14,2)` and every calculation uses integer paisa, never floating point (`src/lib/money.ts`).
+- **Dates** are stored as Postgres `DATE` and handled as `YYYY-MM-DD` strings, so a record for October 1 can never show up on September 30 (`src/lib/dates.ts`). "Today" and "this month" use the household timezone (default `Asia/Karachi`).
+- **Balance** = starting balance + money received − expenses. It is never stored: the dashboard sums it, and the ledger computes a running balance per row with a Postgres window function (`src/server/queries/ledger.ts`).
+- **Shopping budget remaining** = that member's budget **for that year** − their shopping in that year. Budgets live in `ShoppingBudget(memberId, year)`, so changing next year never changes history.
+- **Home budget** = each category's expected monthly amount − that month's spending.
+- Editing or deleting anything refreshes every page, because all totals are derived from transactions. The pure calculation code lives in `src/lib/calculations.ts` and is covered by `tests/`.
+
+## Project layout
+
+```
+prisma/            schema + development seed
+src/proxy.ts       blocks signed-out access to pages and APIs
+src/server/        server-only: auth, db, queries, server actions, export builder
+src/lib/           shared, pure: money, dates, calculations, validation (zod), backup format
+src/components/    ui/ (primitives), ledger/ (domain), forms/, charts/, app/ (shell, offline sync)
+src/app/(auth)     login, signup
+src/app/onboarding first-run setup
+src/app/(app)      dashboard, home, shopping, outing, records, analytics, export, settings/*
+src/app/api/export Excel / CSV / JSON downloads
+public/sw.js       service worker (app shell + previously visited pages offline)
+tests/             node:test suites
 ```
 
-### 5. Production Build
-```bash
-npm run build
-npm start
-```
+## Security
 
----
+- Passwords are bcrypt-hashed. Sessions are signed, `httpOnly` cookies verified on every request.
+- Every query and server action takes the household from the session, never from the browser, so IDs from another household do nothing.
+- Inputs are validated with zod on the server. Users see friendly messages; errors are logged only on the server.
+- Signing out also clears the offline page cache on the device.
 
-## 📂 Project Structure
+## Offline & PWA
 
-```
-HomeLedger/
-├── prisma/
-│   ├── schema.prisma       # PostgreSQL schema (Household, User, Expense, Income, etc.)
-│   └── seed.ts             # Realistic seed data (Sarah, Qumail, Taha, Masi, Madrasa, etc.)
-├── public/
-│   ├── manifest.json       # PWA manifest
-│   ├── sw.js               # Service Worker for offline app shell
-│   └── icon-192.png        # PWA app icons
-├── src/
-│   ├── app/
-│   │   ├── actions.ts      # Server Actions (CRUD, settings, import, seeding)
-│   │   ├── layout.tsx      # Root layout with ThemeProvider, ToastProvider & PWA
-│   │   ├── page.tsx        # Dashboard page with financial overview
-│   │   ├── records/        # All Records (Excel spreadsheet view)
-│   │   ├── home/           # Dedicated Home expenses table & budget status
-│   │   ├── shopping/       # Dedicated Shopping expenses table & yearly budgets
-│   │   ├── outing/         # Dedicated Outing dining table & metrics
-│   │   ├── analytics/      # Financial charts & category breakdowns
-│   │   ├── export/         # Multi-sheet Excel export, CSV, and import workflow
-│   │   └── settings/       # Household settings, categories & yearly budget limits
-│   ├── components/
-│   │   ├── dashboard/      # Summary cards, spending charts, shopping progress
-│   │   ├── modals/         # Quick Add Expense, Receive Money, Edit, Safe Delete
-│   │   ├── navigation/     # Desktop Sidebar, Mobile Bottom Nav, Top Bar
-│   │   └── ui/             # Toast notification system
-│   ├── lib/
-│   │   ├── currency.ts     # Precise decimal arithmetic & PKR formatting
-│   │   ├── date.ts         # Timezone-safe calendar date handling
-│   │   ├── ledger-service.ts# Server calculations for balances and summaries
-│   │   └── prisma.ts       # Prisma client singleton
-│   └── tests/
-│       └── financial-calculations.test.ts # Financial calculation test suite
-```
+Install from the browser ("Add to Home Screen" on iPhone, or the install button on Android and desktop). Pages you have opened stay available offline. Expenses and money received entered offline are saved on the device and synced automatically when the connection returns. Each one carries a unique ID, so syncing twice can never create duplicates.
+
+## Import & backup
+
+- **Import** (Export page): choose Home, Shopping or Outing, upload a CSV or Excel file, match the columns, check the rows (invalid rows are listed with the reason), then confirm. Nothing is written before you confirm.
+- **Backup**: a JSON file with every transaction, category, member, yearly budget and setting. **Restore** (Settings → Data Management) shows what's inside and asks you to type `RESTORE` before replacing anything.
+
+## Future: recurring expenses
+
+The schema is ready for a `RecurringExpense` template table (category, amount, day of month, `enabled = false` by default). Generated rows would be ordinary expenses, and nothing is inserted automatically unless the feature is turned on.

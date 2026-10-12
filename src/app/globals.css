@@ -1,89 +1,196 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  --radius: 0.875rem;
+
+  --background: oklch(0.985 0.002 250);
+  --foreground: oklch(0.21 0.02 260);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.21 0.02 260);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.21 0.02 260);
+  --primary: oklch(0.27 0.03 260);
+  --primary-foreground: oklch(0.985 0 0);
+  --secondary: oklch(0.96 0.004 250);
+  --secondary-foreground: oklch(0.27 0.03 260);
+  --muted: oklch(0.965 0.004 250);
+  --muted-foreground: oklch(0.52 0.02 260);
+  --accent: oklch(0.955 0.006 250);
+  --accent-foreground: oklch(0.27 0.03 260);
+  --destructive: oklch(0.56 0.21 25);
+  --destructive-foreground: oklch(0.99 0 0);
+  --border: oklch(0.915 0.006 250);
+  --input: oklch(0.9 0.008 250);
+  --ring: oklch(0.6 0.12 255);
+
+  /* Financial meaning */
+  --positive: oklch(0.55 0.14 155);
+  --positive-soft: oklch(0.96 0.04 155);
+  --warning: oklch(0.6 0.15 65);
+  --warning-soft: oklch(0.97 0.05 80);
+  --danger: oklch(0.56 0.2 25);
+  --danger-soft: oklch(0.965 0.03 20);
+
+  /* Expense type identities */
+  --home: #2a78d6;
+  --home-soft: oklch(0.96 0.03 255);
+  --shopping: #1baf7a;
+  --shopping-soft: oklch(0.96 0.04 170);
+  --outing: #eb6834;
+  --outing-soft: oklch(0.96 0.035 45);
+  --received: oklch(0.55 0.14 155);
+  --received-soft: oklch(0.96 0.04 155);
+
+  --chart-grid: oklch(0.92 0.005 250);
+}
+
+.dark {
+  --background: oklch(0.155 0.012 260);
+  --foreground: oklch(0.94 0.005 250);
+  --card: oklch(0.195 0.014 260);
+  --card-foreground: oklch(0.94 0.005 250);
+  --popover: oklch(0.21 0.015 260);
+  --popover-foreground: oklch(0.94 0.005 250);
+  --primary: oklch(0.93 0.008 250);
+  --primary-foreground: oklch(0.2 0.02 260);
+  --secondary: oklch(0.25 0.015 260);
+  --secondary-foreground: oklch(0.94 0.005 250);
+  --muted: oklch(0.24 0.014 260);
+  --muted-foreground: oklch(0.7 0.015 255);
+  --accent: oklch(0.26 0.016 260);
+  --accent-foreground: oklch(0.94 0.005 250);
+  --destructive: oklch(0.62 0.19 25);
+  --destructive-foreground: oklch(0.99 0 0);
+  --border: oklch(0.28 0.014 260);
+  --input: oklch(0.32 0.016 260);
+  --ring: oklch(0.65 0.12 255);
+
+  --positive: oklch(0.74 0.14 155);
+  --positive-soft: oklch(0.3 0.05 155);
+  --warning: oklch(0.8 0.14 75);
+  --warning-soft: oklch(0.32 0.05 75);
+  --danger: oklch(0.7 0.17 22);
+  --danger-soft: oklch(0.3 0.06 22);
+
+  --home: #3987e5;
+  --home-soft: oklch(0.29 0.05 255);
+  --shopping: #199e70;
+  --shopping-soft: oklch(0.3 0.05 170);
+  --outing: #d95926;
+  --outing-soft: oklch(0.31 0.05 45);
+  --received: oklch(0.74 0.14 155);
+  --received-soft: oklch(0.3 0.05 155);
+
+  --chart-grid: oklch(0.3 0.012 260);
+}
+
+@theme inline {
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: ui-monospace, monospace;
+
+  --radius-sm: calc(var(--radius) - 6px);
+  --radius-md: calc(var(--radius) - 4px);
+  --radius-lg: calc(var(--radius) - 2px);
+  --radius-xl: var(--radius);
+  --radius-2xl: calc(var(--radius) + 4px);
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --color-positive: var(--positive);
+  --color-positive-soft: var(--positive-soft);
+  --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-home: var(--home);
+  --color-home-soft: var(--home-soft);
+  --color-shopping: var(--shopping);
+  --color-shopping-soft: var(--shopping-soft);
+  --color-outing: var(--outing);
+  --color-outing-soft: var(--outing-soft);
+  --color-received: var(--received);
+  --color-received-soft: var(--received-soft);
+  --color-chart-grid: var(--chart-grid);
+
+  --animate-in: fade-in 160ms ease-out;
+  --animate-dialog: dialog-in 180ms cubic-bezier(0.2, 0.9, 0.3, 1);
+  --animate-sheet: sheet-in 220ms cubic-bezier(0.2, 0.9, 0.3, 1);
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes dialog-in {
+  from { opacity: 0; transform: translateY(8px) scale(0.98); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes sheet-in {
+  from { transform: translateY(100%); }
+  to { transform: none; }
+}
+
 @layer base {
-  :root {
-    --background: 210 20% 98%;
-    --foreground: 222 47% 11%;
-    --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 222 47% 11%;
-    --primary: 221 83% 53%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222 47% 11.2%;
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222 47% 11.2%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 221.2 83.2% 53.3%;
-    --radius: 0.75rem;
-
-    /* Expense specific tokens */
-    --home-accent: 217 91% 60%;
-    --shopping-accent: 271 91% 65%;
-    --outing-accent: 38 92% 50%;
-    --income-accent: 142 71% 45%;
+  * {
+    @apply border-border outline-ring/50;
   }
-
-  .dark {
-    --background: 224 71% 4%;
-    --foreground: 213 31% 91%;
-    --card: 224 71% 6%;
-    --card-foreground: 213 31% 91%;
-    --popover: 224 71% 6%;
-    --popover-foreground: 213 31% 91%;
-    --primary: 217 91% 60%;
-    --primary-foreground: 222 47% 11%;
-    --secondary: 217 33% 13%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217 33% 13%;
-    --muted-foreground: 215 20% 65%;
-    --accent: 217 33% 13%;
-    --accent-foreground: 210 40% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 217 33% 15%;
-    --input: 217 33% 15%;
-    --ring: 224 76% 48%;
-
-    --home-accent: 217 91% 65%;
-    --shopping-accent: 271 91% 70%;
-    --outing-accent: 38 92% 55%;
-    --income-accent: 142 71% 50%;
+  html {
+    -webkit-tap-highlight-color: transparent;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: "tnum" 0;
+  }
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+  /* Remove number spinners — amounts use inputMode="decimal" text fields */
+  input[type="number"]::-webkit-inner-spin-button,
+  input[type="number"]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
   }
 }
 
-body {
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+/* iPhone safe areas in standalone mode */
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom);
 }
-
-/* Custom scrollbar for modern feel */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+.pt-safe {
+  padding-top: env(safe-area-inset-top);
 }
-::-webkit-scrollbar-track {
-  background: transparent;
+.mb-nav {
+  /* space for the mobile bottom navigation + home indicator */
+  padding-bottom: calc(5.5rem + env(safe-area-inset-bottom));
 }
-::-webkit-scrollbar-thumb {
-  background: rgba(156, 163, 175, 0.4);
-  border-radius: 4px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: rgba(156, 163, 175, 0.7);
-}
-
-/* Safe area insets for mobile */
-.safe-bottom {
-  padding-bottom: env(safe-area-inset-bottom, 1rem);
-}
-.safe-top {
-  padding-top: env(safe-area-inset-top, 1rem);
+@media (min-width: 1024px) {
+  .mb-nav {
+    padding-bottom: 2.5rem;
+  }
 }

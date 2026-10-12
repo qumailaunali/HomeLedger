@@ -1,192 +1,198 @@
+/**
+ * Development seed — realistic sample data based on the household's real
+ * spreadsheet categories. Never runs in production, and never wipes existing
+ * data unless you pass --reset.
+ *
+ *   npm run seed            # only seeds an empty database
+ *   npm run seed -- --reset # wipes ALL data first (development only)
+ */
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
 
 const prisma = new PrismaClient();
+const reset = process.argv.includes("--reset");
+
+const DEMO_EMAIL = process.env.SEED_EMAIL ?? "demo@homeledger.local";
+const DEMO_PASSWORD = process.env.SEED_PASSWORD ?? "demo-password";
+
+const HOME_CATEGORIES: [string, number][] = [
+  ["Food", 17000],
+  ["Shopping", 15000],
+  ["Masi", 15000],
+  ["Petrol Freed", 15700],
+  ["Mehran Petrol", 10000],
+  ["Qumail", 7000],
+  ["Sarah", 7000],
+  ["Taha Van", 5500],
+  ["Qumail Van", 5000],
+  ["Quran", 4500],
+  ["KC", 3000],
+  ["Chokidar", 3000],
+  ["Taha", 3000],
+  ["Internet", 1400],
+  ["Madrasa Van", 1300],
+  ["Madrasa", 1200],
+  ["Cable", 400],
+];
+
+const MEMBERS: [string, Record<number, number>][] = [
+  ["Sarah", { 2025: 35000, 2026: 35000 }],
+  ["Qumail", { 2025: 35000, 2026: 40000 }],
+  ["Taha", { 2025: 35000, 2026: 35000 }],
+  ["Farida", { 2025: 35000, 2026: 35000 }],
+  ["Others", { 2025: 100000, 2026: 100000 }],
+];
+
+const SHOPPING_ITEMS: Record<string, string[]> = {
+  Sarah: ["Winter dresses", "Shoes", "Lawn suit", "Handbag"],
+  Qumail: ["Shopping shirts", "Jeans", "Sneakers", "Kurta"],
+  Taha: ["School shoes", "Uniform", "Toys", "Jacket"],
+  Farida: ["Shawl", "Sandals", "Dupatta", "Eid clothes"],
+  Others: ["Eye glasses", "Medicine", "Pillow", "Trimmer", "Car headlight", "WD40", "Tyre repair kit", "Bulb", "Car wash", "Books", "Extension"],
+};
+
+const OUTINGS: [string, number][] = [
+  ["Kolachi", 12500],
+  ["KFC", 4500],
+  ["Butlers Chocolate Cafe", 3800],
+  ["BBQ Tonight", 9200],
+  ["Pizza Hut", 6100],
+  ["Ice cream at Hob Nob", 1500],
+];
+
+// Deterministic pseudo-random so every seed looks the same.
+let state = 42;
+const rand = () => ((state = (state * 1664525 + 1013904223) % 2 ** 32) / 2 ** 32);
+const pick = <T,>(xs: T[]) => xs[Math.floor(rand() * xs.length)];
+const vary = (amount: number, pct: number) => Math.round((amount * (1 + (rand() * 2 - 1) * pct)) / 50) * 50;
+const day = (y: number, m: number, d: number) => new Date(Date.UTC(y, m - 1, d));
 
 async function main() {
-  console.log("🌱 Starting HomeLedger database seeding on Neon PostgreSQL...");
+  if (process.env.NODE_ENV === "production") {
+    throw new Error("Refusing to seed: NODE_ENV is production.");
+  }
+  const existing = await prisma.household.count();
+  if (existing > 0 && !reset) {
+    console.log("Database already has data — nothing seeded. Use `npm run seed -- --reset` to wipe and reseed (development only).");
+    return;
+  }
+  if (reset) {
+    console.log("Wiping all data…");
+    await prisma.expense.deleteMany();
+    await prisma.income.deleteMany();
+    await prisma.shoppingBudget.deleteMany();
+    await prisma.shoppingMember.deleteMany();
+    await prisma.homeCategory.deleteMany();
+    await prisma.user.deleteMany();
+    await prisma.household.deleteMany();
+  }
 
-  // 1. Clean existing records for fresh seed
-  await prisma.expense.deleteMany();
-  await prisma.income.deleteMany();
-  await prisma.shoppingBudget.deleteMany();
-  await prisma.shoppingMember.deleteMany();
-  await prisma.homeCategory.deleteMany();
-  await prisma.user.deleteMany();
-  await prisma.household.deleteMany();
-
-  // 2. Create Household
   const household = await prisma.household.create({
     data: {
       name: "Ali Household",
       currency: "PKR",
       currencySymbol: "Rs.",
-      startingBalance: 60950,
-      dateFormat: "DD MMM YYYY",
+      startingBalance: "60950.00",
+      timezone: "Asia/Karachi",
+      onboardedAt: new Date(),
     },
   });
-
-  // 3. Create Default User
-  const passwordHash = await bcrypt.hash("password123", 10);
   await prisma.user.create({
     data: {
-      email: "demo@homeledger.com",
-      name: "Qumail Ali",
-      passwordHash,
+      email: DEMO_EMAIL,
+      name: "Qumail",
+      passwordHash: await bcrypt.hash(DEMO_PASSWORD, 12),
       householdId: household.id,
+      role: "OWNER",
     },
   });
 
-  // 4. Create Home Expense Categories
-  const homeCategoriesData = [
-    { name: "Food", expected: 17000, icon: "utensils", order: 1 },
-    { name: "Internet", expected: 1400, icon: "wifi", order: 2 },
-    { name: "Cable", expected: 400, icon: "tv", order: 3 },
-    { name: "KC", expected: 3000, icon: "home", order: 4 },
-    { name: "Masi", expected: 15000, icon: "user-check", order: 5 },
-    { name: "Madrasa", expected: 1200, icon: "book-open", order: 6 },
-    { name: "Madrasa Van", expected: 1300, icon: "bus", order: 7 },
-    { name: "Quran", expected: 4500, icon: "book", order: 8 },
-    { name: "Qumail Van", expected: 5000, icon: "bus", order: 9 },
-    { name: "Taha Van", expected: 5500, icon: "bus", order: 10 },
-    { name: "Mehran Petrol", expected: 10000, icon: "fuel", order: 11 },
-    { name: "Petrol Freed", expected: 15700, icon: "fuel", order: 12 },
-    { name: "Chokidar", expected: 3000, icon: "shield", order: 13 },
-    { name: "Qumail", expected: 7000, icon: "user", order: 14 },
-    { name: "Sarah", expected: 7000, icon: "user", order: 15 },
-    { name: "Taha", expected: 3000, icon: "user", order: 16 },
-  ];
-
-  const categoryMap = new Map<string, string>();
-  for (const cat of homeCategoriesData) {
-    const created = await prisma.homeCategory.create({
+  const cat = new Map<string, string>();
+  for (const [i, [name, expected]] of HOME_CATEGORIES.entries()) {
+    const c = await prisma.homeCategory.create({
+      data: { householdId: household.id, name, expectedMonthlyAmount: `${expected}.00`, sortOrder: i + 1 },
+    });
+    cat.set(name, c.id);
+  }
+  const mem = new Map<string, string>();
+  for (const [i, [name, budgets]] of MEMBERS.entries()) {
+    const m = await prisma.shoppingMember.create({
       data: {
         householdId: household.id,
-        name: cat.name,
-        expectedMonthlyAmount: cat.expected,
-        icon: cat.icon,
-        sortOrder: cat.order,
+        name,
+        sortOrder: i + 1,
+        budgets: { create: Object.entries(budgets).map(([year, amount]) => ({ year: Number(year), budgetAmount: `${amount}.00` })) },
       },
     });
-    categoryMap.set(cat.name, created.id);
+    mem.set(name, m.id);
   }
 
-  // 5. Create Shopping Members & Yearly Budgets (2025, 2026, 2027)
-  const shoppingMembersData = [
-    { name: "Sarah", budgets: { 2025: 35000, 2026: 35000, 2027: 40000 }, order: 1 },
-    { name: "Qumail", budgets: { 2025: 35000, 2026: 35000, 2027: 40000 }, order: 2 },
-    { name: "Taha", budgets: { 2025: 35000, 2026: 35000, 2027: 40000 }, order: 3 },
-    { name: "Farida", budgets: { 2025: 35000, 2026: 35000, 2027: 40000 }, order: 4 },
-    { name: "Others", budgets: { 2025: 100000, 2026: 100000, 2027: 120000 }, order: 5 },
-  ];
+  // January 2026 → October 2026 (up to the 11th for the current month)
+  const months: [number, number, number][] = [];
+  for (let m = 1; m <= 10; m++) months.push([2026, m, m === 10 ? 11 : 28]);
 
-  const memberMap = new Map<string, string>();
-  for (const member of shoppingMembersData) {
-    const createdMember = await prisma.shoppingMember.create({
-      data: {
+  const incomes = [];
+  const expenses = [];
+  for (const [y, m, lastDay] of months) {
+    incomes.push({ householdId: household.id, amount: "170000.00", date: day(y, m, 1), description: "House money", source: "House money" });
+    if (m % 3 === 0) {
+      incomes.push({ householdId: household.id, amount: "25000.00", date: day(y, m, 15), description: "Extra cash", source: "Cash received" });
+    }
+
+    for (const [name, expected] of HOME_CATEGORIES) {
+      const fixed = ["Internet", "Cable", "Masi", "Madrasa", "Madrasa Van", "Quran", "Chokidar", "KC", "Taha Van", "Qumail Van"].includes(name);
+      const d = Math.min(2 + Math.floor(rand() * 8), lastDay);
+      const amount = fixed ? expected : vary(expected, 0.25);
+      expenses.push({
         householdId: household.id,
-        name: member.name,
-        sortOrder: member.order,
-      },
-    });
-    memberMap.set(member.name, createdMember.id);
+        type: "HOME" as const,
+        amount: `${amount}.00`,
+        date: day(y, m, d),
+        description: name === "Internet" ? `${new Date(Date.UTC(y, m - 1)).toLocaleString("en", { month: "long" })} internet bill` : name,
+        homeCategoryId: cat.get(name)!,
+      });
+    }
 
-    for (const [yearStr, amount] of Object.entries(member.budgets)) {
-      await prisma.shoppingBudget.create({
-        data: {
-          memberId: createdMember.id,
-          year: parseInt(yearStr, 10),
-          budgetAmount: amount,
-        },
+    const purchases = 2 + Math.floor(rand() * 3);
+    for (let i = 0; i < purchases; i++) {
+      const who = pick(MEMBERS)[0];
+      const base = who === "Others" ? 6000 : 3500;
+      expenses.push({
+        householdId: household.id,
+        type: "SHOPPING" as const,
+        amount: `${vary(base, 0.6)}.00`,
+        date: day(y, m, 1 + Math.floor(rand() * lastDay)),
+        description: pick(SHOPPING_ITEMS[who]),
+        shoppingMemberId: mem.get(who)!,
+      });
+    }
+
+    const outings = 1 + Math.floor(rand() * 3);
+    for (let i = 0; i < outings; i++) {
+      const [place, amount] = pick(OUTINGS);
+      expenses.push({
+        householdId: household.id,
+        type: "OUTING" as const,
+        amount: `${vary(amount, 0.2)}.00`,
+        date: day(y, m, 1 + Math.floor(rand() * lastDay)),
+        description: place,
+        place,
+        numberOfPeople: 2 + Math.floor(rand() * 4),
+        paymentMethod: pick(["Cash", "Card"]),
       });
     }
   }
 
-  // 6. Income Records
-  // Oct 1, 2026: Rs. 170,000
-  await prisma.income.create({
-    data: {
-      householdId: household.id,
-      amount: 170000,
-      date: new Date(Date.UTC(2026, 9, 1, 12, 0, 0)),
-      description: "House money / Monthly salary",
-      source: "Salary / House money",
-    },
-  });
+  await prisma.income.createMany({ data: incomes });
+  await prisma.expense.createMany({ data: expenses });
 
-  // 7. Home Expenses for October 2026
-  const homeExpenses = [
-    { cat: "Masi", amount: 15000, day: 2, desc: "Monthly salary" },
-    { cat: "Taha", amount: 10000, day: 3, desc: "Pocket money & van fee" },
-    { cat: "Internet", amount: 1400, day: 5, desc: "October internet bill" },
-    { cat: "Petrol Freed", amount: 15700, day: 8, desc: "Freed fuel refuel" },
-    { cat: "Food", amount: 14200, day: 10, desc: "Monthly grocery from Imtiaz" },
-    { cat: "Quran", amount: 4500, day: 11, desc: "Quran teacher monthly fee" },
-  ];
-
-  for (const exp of homeExpenses) {
-    await prisma.expense.create({
-      data: {
-        householdId: household.id,
-        type: "HOME",
-        amount: exp.amount,
-        date: new Date(Date.UTC(2026, 9, exp.day, 12, 0, 0)),
-        description: exp.desc,
-        homeCategoryId: categoryMap.get(exp.cat),
-      },
-    });
-  }
-
-  // 8. Shopping Expenses for October 2026
-  const shoppingExpenses = [
-    { member: "Qumail", amount: 5000, day: 4, desc: "Shopping shirts" },
-    { member: "Sarah", amount: 12000, day: 7, desc: "Winter dresses" },
-    { member: "Others", amount: 8500, day: 9, desc: "Eye glasses & medicines" },
-    { member: "Farida", amount: 6000, day: 11, desc: "Shoes & handbag" },
-  ];
-
-  for (const exp of shoppingExpenses) {
-    await prisma.expense.create({
-      data: {
-        householdId: household.id,
-        type: "SHOPPING",
-        amount: exp.amount,
-        date: new Date(Date.UTC(2026, 9, exp.day, 12, 0, 0)),
-        description: exp.desc,
-        shoppingMemberId: memberMap.get(exp.member),
-      },
-    });
-  }
-
-  // 9. Outing Expenses for October 2026
-  const outingExpenses = [
-    { place: "Kolachi", amount: 12500, day: 6, desc: "Family dinner at Do Darya", people: 5, method: "Card" },
-    { place: "KFC", amount: 4500, day: 9, desc: "Weekend family meal", people: 3, method: "Cash" },
-  ];
-
-  for (const exp of outingExpenses) {
-    await prisma.expense.create({
-      data: {
-        householdId: household.id,
-        type: "OUTING",
-        amount: exp.amount,
-        date: new Date(Date.UTC(2026, 9, exp.day, 12, 0, 0)),
-        description: exp.desc,
-        place: exp.place,
-        numberOfPeople: exp.people,
-        paymentMethod: exp.method,
-      },
-    });
-  }
-
-  console.log("✅ Seed completed successfully!");
+  console.log(`Seeded ${incomes.length} money-received records and ${expenses.length} expenses.`);
+  console.log(`Sign in with ${DEMO_EMAIL} / ${DEMO_PASSWORD}`);
 }
 
 main()
   .catch((e) => {
-    console.error("❌ Seed error:", e);
+    console.error(e instanceof Error ? e.message : e);
     process.exit(1);
   })
-  .finally(async () => {
-    await prisma.$disconnect();
-  });
+  .finally(() => prisma.$disconnect());

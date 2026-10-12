@@ -7,15 +7,33 @@ generator client {
   provider = "prisma-client-js"
 }
 
+// Money is stored as NUMERIC(14,2) and converted to integer paisa (cents) for
+// every calculation — never JavaScript floating point. Calendar dates
+// (expense / income dates) are stored as DATE so they cannot shift across
+// timezones. Balances and "budget remaining" values are always derived from
+// transactions and never stored.
+
+enum ExpenseType {
+  HOME
+  SHOPPING
+  OUTING
+}
+
+enum UserRole {
+  OWNER
+  MEMBER
+}
+
 model User {
-  id           String     @id @default(cuid())
-  email        String     @unique
+  id           String    @id @default(cuid())
+  email        String    @unique
   name         String
   passwordHash String
+  role         UserRole  @default(OWNER)
   householdId  String
-  household    Household  @relation(fields: [householdId], references: [id], onDelete: Cascade)
-  createdAt    DateTime   @default(now())
-  updatedAt    DateTime   @updatedAt
+  household    Household @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
 
   @@index([householdId])
 }
@@ -25,8 +43,10 @@ model Household {
   name            String           @default("My Household")
   currency        String           @default("PKR")
   currencySymbol  String           @default("Rs.")
-  startingBalance Float            @default(60950)
-  dateFormat      String           @default("DD MMM YYYY")
+  startingBalance Decimal          @default(0) @db.Decimal(14, 2)
+  dateFormat      String           @default("MMM D, YYYY")
+  timezone        String           @default("Asia/Karachi")
+  onboardedAt     DateTime?
   users           User[]
   homeCategories  HomeCategory[]
   shoppingMembers ShoppingMember[]
@@ -41,7 +61,7 @@ model HomeCategory {
   householdId           String
   household             Household @relation(fields: [householdId], references: [id], onDelete: Cascade)
   name                  String
-  expectedMonthlyAmount Float     @default(0)
+  expectedMonthlyAmount Decimal   @default(0) @db.Decimal(14, 2)
   isActive              Boolean   @default(true)
   sortOrder             Int       @default(0)
   icon                  String?
@@ -49,7 +69,7 @@ model HomeCategory {
   createdAt             DateTime  @default(now())
   updatedAt             DateTime  @updatedAt
 
-  @@index([householdId])
+  @@index([householdId, sortOrder])
 }
 
 model ShoppingMember {
@@ -64,33 +84,37 @@ model ShoppingMember {
   createdAt   DateTime         @default(now())
   updatedAt   DateTime         @updatedAt
 
-  @@index([householdId])
+  @@index([householdId, sortOrder])
 }
 
+// One row per member per year, so changing next year's budget never rewrites
+// history: Qumail 2025 = 35,000 and Qumail 2026 = 40,000 live side by side.
 model ShoppingBudget {
   id           String         @id @default(cuid())
   memberId     String
   member       ShoppingMember @relation(fields: [memberId], references: [id], onDelete: Cascade)
   year         Int
-  budgetAmount Float          @default(0)
+  budgetAmount Decimal        @default(0) @db.Decimal(14, 2)
   createdAt    DateTime       @default(now())
   updatedAt    DateTime       @updatedAt
 
   @@unique([memberId, year])
-  @@index([memberId])
 }
 
 model Income {
   id          String    @id @default(cuid())
   householdId String
   household   Household @relation(fields: [householdId], references: [id], onDelete: Cascade)
-  amount      Float
-  date        DateTime
+  amount      Decimal   @db.Decimal(14, 2)
+  date        DateTime  @db.Date
   description String
-  source      String?   @default("House money")
+  source      String?
+  // Client-generated idempotency key so offline-queued records never duplicate.
+  clientId    String?
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
+  @@unique([householdId, clientId])
   @@index([householdId, date])
 }
 
@@ -98,29 +122,37 @@ model Expense {
   id               String          @id @default(cuid())
   householdId      String
   household        Household       @relation(fields: [householdId], references: [id], onDelete: Cascade)
-  type             String          // "HOME", "SHOPPING", "OUTING"
-  amount           Float
-  date             DateTime
+  type             ExpenseType
+  amount           Decimal         @db.Decimal(14, 2)
+  date             DateTime        @db.Date
   description      String
   notes            String?
-  
-  // Specific relation fields
+
   homeCategoryId   String?
-  homeCategory     HomeCategory?   @relation(fields: [homeCategoryId], references: [id], onDelete: SetNull)
+  homeCategory     HomeCategory?   @relation(fields: [homeCategoryId], references: [id], onDelete: Restrict)
 
   shoppingMemberId String?
-  shoppingMember   ShoppingMember? @relation(fields: [shoppingMemberId], references: [id], onDelete: SetNull)
+  shoppingMember   ShoppingMember? @relation(fields: [shoppingMemberId], references: [id], onDelete: Restrict)
 
-  // Outing specific fields
-  place            String?         // Restaurant or venue
+  // Outing details
+  place            String?
   numberOfPeople   Int?
   paymentMethod    String?
+
+  // Client-generated idempotency key so offline-queued records never duplicate.
+  clientId         String?
 
   createdAt        DateTime        @default(now())
   updatedAt        DateTime        @updatedAt
 
+  @@unique([householdId, clientId])
   @@index([householdId, date])
-  @@index([householdId, type])
-  @@index([shoppingMemberId])
-  @@index([homeCategoryId])
+  @@index([householdId, type, date])
+  @@index([householdId, shoppingMemberId, date])
+  @@index([householdId, homeCategoryId, date])
 }
+
+// Recurring expenses (future): a `RecurringExpense` template table
+// (householdId, type, homeCategoryId, amount, dayOfMonth, enabled=false) can be
+// added without touching Expense — generated rows are ordinary Expenses with a
+// nullable recurringId. Nothing is auto-inserted unless explicitly enabled.
