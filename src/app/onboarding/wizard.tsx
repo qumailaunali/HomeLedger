@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { Loader2, Plus, X } from "lucide-react";
+import { Loader2, Pencil, Plus, X } from "lucide-react";
 import { completeOnboarding } from "@/server/actions/auth";
 import { onboardingSchema, firstIssue } from "@/lib/validation";
 import { cn } from "@/lib/utils";
@@ -12,23 +12,20 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Field, Input, NativeSelect } from "@/components/ui/form-controls";
 
 const SUGGESTED_CATEGORIES = [
-  "Food",
-  "Groceries",
   "Internet",
   "Cable",
-  "Electricity",
-  "Gas",
   "Masi",
   "Madrasa",
   "Madrasa Van",
   "Quran",
-  "Qumail Van",
   "Taha Van",
   "Mehran Petrol",
   "Petrol Freed",
   "Chokidar",
   "KC",
-  "Pocket Money",
+  "Qumail",
+  "Sarah",
+  "Taha",
 ];
 
 const SUGGESTED_MEMBERS: [string, string][] = [
@@ -253,6 +250,13 @@ function RowsEditor({
   addLabel: string;
   hideAmounts?: boolean;
 }) {
+  const [editing, setEditing] = React.useState<number | null>(null);
+  const rename = (index: number, value: string) => {
+    const v = value.trim();
+    setEditing(null);
+    if (!v || rows.some((r, j) => j !== index && r.name.toLowerCase() === v.toLowerCase())) return;
+    setRows((rs) => rs.map((x, j) => (j === index ? { ...x, name: v } : x)));
+  };
   const add = () => {
     const v = newValue.trim();
     if (!v || rows.some((r) => r.name.toLowerCase() === v.toLowerCase())) return;
@@ -267,7 +271,34 @@ function RowsEditor({
           const update = (patch: Partial<Row>) => setRows((rs) => rs.map((x, j) => (j === i ? { ...x, ...patch } : x)));
           return (
             <li key={`${r.name}-${i}`} className="flex min-h-10 items-center gap-2 rounded-xl border bg-card px-3 py-1.5">
-              <span className="flex-1 truncate text-sm font-medium">{r.name}</span>
+              {editing === i ? (
+                <Input
+                  aria-label={`Rename ${r.name}`}
+                  autoFocus
+                  defaultValue={r.name}
+                  className="h-8 flex-1 text-sm"
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      rename(i, e.currentTarget.value);
+                    }
+                    if (e.key === "Escape") setEditing(null);
+                  }}
+                  onBlur={(e) => rename(i, e.currentTarget.value)}
+                />
+              ) : (
+                <>
+                  <span className="flex-1 truncate text-sm font-medium">{r.name}</span>
+                  <button
+                    type="button"
+                    aria-label={`Edit ${r.name}`}
+                    onClick={() => setEditing(i)}
+                    className="rounded-md p-1 text-muted-foreground hover:bg-accent hover:text-foreground"
+                  >
+                    <Pencil className="size-3.5" />
+                  </button>
+                </>
+              )}
               {!hideAmounts &&
                 (r.budgetOpen ? (
                   <div className="relative w-36">
