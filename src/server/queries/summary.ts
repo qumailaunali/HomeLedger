@@ -342,6 +342,53 @@ export async function getOutingStats(householdId: string, year: number, month: n
   };
 }
 
+/** Home statistics for a month and its year. */
+export async function getHomeStats(householdId: string, year: number, month: number) {
+  const p = shiftMonth(year, month, -1);
+  const [monthAgg, prevAgg, yearByMonth, largest] = await Promise.all([
+    prisma.expense.aggregate({
+      where: { householdId, type: "HOME", date: monthRange(year, month) },
+      _sum: { amount: true },
+      _count: true,
+    }),
+    prisma.expense.aggregate({
+      where: { householdId, type: "HOME", date: monthRange(p.year, p.month) },
+      _sum: { amount: true },
+      _count: true,
+    }),
+    prisma.$queryRaw<{ total: Prisma.Decimal; count: number }[]>`
+      SELECT SUM(amount) AS total, COUNT(*)::int AS count
+        FROM "Expense"
+       WHERE "householdId" = ${householdId} AND type = 'HOME'
+         AND date >= ${`${year}-01-01`}::date AND date < ${`${year + 1}-01-01`}::date
+       GROUP BY EXTRACT(MONTH FROM date)`,
+    prisma.expense.findFirst({
+      where: { householdId, type: "HOME", date: yearRange(year) },
+      orderBy: [{ amount: "desc" }, { date: "desc" }],
+      select: { description: true, amount: true, date: true, homeCategory: { select: { name: true } } },
+    }),
+  ]);
+  const yearCents = yearByMonth.reduce((sum, r) => sum + toCents(r.total), 0);
+  const activeMonths = yearByMonth.length;
+  return {
+    monthCents: toCents(monthAgg._sum.amount),
+    monthCount: monthAgg._count,
+    previousMonthCents: toCents(prevAgg._sum.amount),
+    previousMonthCount: prevAgg._count,
+    yearCents,
+    yearCount: yearByMonth.reduce((sum, r) => sum + r.count, 0),
+    activeMonths,
+    monthlyAverageCents: activeMonths ? wholeRupees(yearCents / activeMonths) : 0,
+    largest: largest
+      ? {
+          label: largest.homeCategory?.name ?? largest.description,
+          amountCents: toCents(largest.amount),
+          date: isoOf(largest.date),
+        }
+      : null,
+  };
+}
+
 /** Analytics over an inclusive date range. */
 export async function getAnalytics(household: HouseholdContext, from: IsoDate, to: IsoDate) {
   const range = isoRange(from, to)!;

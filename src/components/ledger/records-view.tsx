@@ -125,7 +125,8 @@ export function RecordsView({
               className="pl-9"
             />
           </label>
-          <div className="flex flex-wrap items-center gap-2">
+          {/* Phones: period select + selector share a two-column grid so nothing overflows. */}
+          <div className="grid grid-cols-[auto_minmax(0,1fr)] items-start gap-2 sm:flex sm:flex-wrap sm:items-center">
             {variant !== "SHOPPING" && (
               <NativeSelect
                 aria-label="Period"
@@ -139,13 +140,13 @@ export function RecordsView({
                 <option value="range">Date range</option>
               </NativeSelect>
             )}
-            {query.period === "month" && <MonthSelector year={query.year} month={query.month} />}
-            {query.period === "year" && <MonthSelector year={query.year} month={query.month} mode="year" />}
+            {query.period === "month" && <MonthSelector year={query.year} month={query.month} className={cn(variant === "SHOPPING" && "col-span-2")} />}
+            {query.period === "year" && <MonthSelector year={query.year} month={query.month} mode="year" className={cn(variant === "SHOPPING" && "col-span-2")} />}
             {query.period === "range" && (
-              <div className="flex items-center gap-2">
-                <Input type="date" aria-label="From date" className="h-10 w-auto" defaultValue={query.from} onChange={(e) => set({ from: e.target.value })} />
+              <div className="col-span-2 grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2 sm:flex">
+                <Input type="date" aria-label="From date" className="h-11 sm:w-auto" defaultValue={query.from} onChange={(e) => set({ from: e.target.value })} />
                 <span className="text-muted-foreground">–</span>
-                <Input type="date" aria-label="To date" className="h-10 w-auto" defaultValue={query.to} onChange={(e) => set({ to: e.target.value })} />
+                <Input type="date" aria-label="To date" className="h-11 sm:w-auto" defaultValue={query.to} onChange={(e) => set({ to: e.target.value })} />
               </div>
             )}
           </div>
@@ -170,7 +171,7 @@ export function RecordsView({
             </div>
           )}
           {showCategory && (
-            <NativeSelect aria-label="Category" value={query.filters.categoryId ?? ""} onChange={(e) => set({ category: e.target.value })} className="h-11 w-auto text-sm">
+            <NativeSelect aria-label="Category" value={query.filters.categoryId ?? ""} onChange={(e) => set({ category: e.target.value })} className="h-11 w-full text-sm sm:w-auto sm:max-w-64">
               <option value="">All categories</option>
               {categories.map((c) => (
                 <option key={c.id} value={c.id}>

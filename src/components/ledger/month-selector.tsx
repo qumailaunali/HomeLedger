@@ -44,22 +44,22 @@ export function MonthSelector({
   const unit = mode === "month" ? "month" : "year";
 
   return (
-    <nav aria-label={`Choose ${unit}`} className={cn("flex items-center gap-2", className)}>
-      <div className="flex items-center rounded-xl border bg-card p-0.5 shadow-xs">
+    <nav aria-label={`Choose ${unit}`} className={cn("flex min-w-0 flex-wrap items-center gap-2", className)}>
+      <div className="flex min-w-0 flex-[1_1_12rem] items-center rounded-xl border bg-card p-0.5 shadow-xs sm:flex-none">
         <Link
           href={hrefFor(prev.year, prev.month)}
-          className={cn(buttonVariants({ variant: "ghost", size: "icon-sm" }), "size-11 sm:size-9")}
+          className={cn(buttonVariants({ variant: "ghost", size: "icon-sm" }), "size-11 shrink-0 sm:size-9")}
           aria-label={`Previous ${unit}`}
           scroll={false}
         >
           <ChevronLeft />
         </Link>
-        <span className="tabular min-w-32 px-1 text-center text-sm font-semibold" aria-live="polite">
+        <span className="tabular min-w-0 flex-1 truncate px-1 text-center text-sm font-semibold sm:min-w-32" aria-live="polite">
           {label}
         </span>
         <Link
           href={hrefFor(next.year, next.month)}
-          className={cn(buttonVariants({ variant: "ghost", size: "icon-sm" }), "size-11 sm:size-9")}
+          className={cn(buttonVariants({ variant: "ghost", size: "icon-sm" }), "size-11 shrink-0 sm:size-9")}
           aria-label={`Next ${unit}`}
           scroll={false}
         >
