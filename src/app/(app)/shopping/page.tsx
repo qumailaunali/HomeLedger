@@ -2,10 +2,10 @@ import { Suspense } from "react";
 import type { Metadata } from "next";
 import { requireHousehold } from "@/server/auth";
 import { getLedgerPage } from "@/server/queries/ledger";
-import { getActiveMembers, getShoppingBudget } from "@/server/queries/summary";
+import { getActiveMembers, getPeriodTotals, getPotBalances, getShoppingBudget } from "@/server/queries/summary";
 import { ledgerQueryFromParams } from "@/server/ledger-params";
 import type { SearchParams } from "@/server/params";
-import { todayIso } from "@/lib/dates";
+import { todayIso, yearRange } from "@/lib/dates";
 import { RecordsView, TypePageIcon } from "@/components/ledger/records-view";
 import { ShoppingBudgets } from "./shopping-budgets";
 
@@ -14,10 +14,12 @@ export const metadata: Metadata = { title: "Shopping" };
 export default async function ShoppingPage({ searchParams }: { searchParams: SearchParams }) {
   const { household } = await requireHousehold();
   const query = ledgerQueryFromParams(await searchParams, todayIso(household.timezone), "SHOPPING", "year");
-  const [page, members, budget] = await Promise.all([
+  const [page, members, budget, pots, yearTotals] = await Promise.all([
     getLedgerPage(household, query.filters),
     getActiveMembers(household.id, query.year),
     getShoppingBudget(household.id, query.year),
+    getPotBalances(household),
+    getPeriodTotals(household.id, yearRange(query.year)),
   ]);
 
   return (
@@ -32,7 +34,13 @@ export default async function ShoppingPage({ searchParams }: { searchParams: Sea
         categories={[]}
         members={members}
       >
-        <ShoppingBudgets lines={budget.lines} totals={budget.totals} year={query.year} />
+        <ShoppingBudgets
+          lines={budget.lines}
+          totals={budget.totals}
+          year={query.year}
+          balanceCents={pots.SHOPPING}
+          yearSpentCents={yearTotals.shoppingCents}
+        />
       </RecordsView>
     </Suspense>
   );

@@ -7,7 +7,8 @@ import { cn } from "@/lib/utils";
 import { useApp } from "@/components/app/app-context";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { BudgetProgress, EmptyState } from "@/components/ledger/display";
+import { BudgetProgress, EmptyState, SummaryCard } from "@/components/ledger/display";
+import { PotBalanceCard } from "@/components/ledger/pot-stats";
 import { TYPE_META } from "@/components/ledger/type-meta";
 import type { BudgetLine } from "@/types";
 
@@ -16,10 +17,14 @@ export function ShoppingBudgets({
   lines,
   totals,
   year,
+  balanceCents,
+  yearSpentCents,
 }: {
   lines: BudgetLine[];
   totals: { budgetCents: number; spentCents: number; remainingCents: number };
   year: number;
+  balanceCents: number;
+  yearSpentCents: number;
 }) {
   const { money, openExpense } = useApp();
   // Collapsed by default on phones so transactions are reachable with less scroll.
@@ -27,25 +32,41 @@ export function ShoppingBudgets({
     () => typeof window === "undefined" || !window.matchMedia("(max-width: 639px)").matches,
   );
 
+  // Always visible, also on phones: pot balance and this year's shopping total.
+  const cards = (
+    <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <PotBalanceCard type="SHOPPING" balanceCents={balanceCents} />
+      <SummaryCard
+        label={`Total in ${year}`}
+        cents={yearSpentCents}
+        hint={totals.budgetCents > 0 ? `of ${money(totals.budgetCents)} budget` : "Shopping expenses"}
+      />
+    </div>
+  );
+
   if (lines.length === 0) {
     return (
-      <Card>
-        <EmptyState
-          icon={TYPE_META.SHOPPING.icon}
-          title="No shopping members yet"
-          description="Add people like Sarah, Qumail and Others, each with a yearly budget."
-          action={
-            <Link href="/settings/shopping-members" className={buttonVariants({ variant: "outline", size: "sm" })}>
-              Set up members
-            </Link>
-          }
-        />
-      </Card>
+      <div className="grid gap-3">
+        {cards}
+        <Card>
+          <EmptyState
+            icon={TYPE_META.SHOPPING.icon}
+            title="No shopping members yet"
+            description="Add people like Sarah, Qumail and Others, each with a yearly budget."
+            action={
+              <Link href="/settings/shopping-members" className={buttonVariants({ variant: "outline", size: "sm" })}>
+                Set up members
+              </Link>
+            }
+          />
+        </Card>
+      </div>
     );
   }
 
   return (
     <div className="grid gap-3">
+      {cards}
       <button
         type="button"
         onClick={() => setExpanded((e) => !e)}
