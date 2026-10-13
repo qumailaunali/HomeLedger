@@ -30,7 +30,7 @@ export function TransactionList({
   }, [rows, prefs.today, prefs.dateFormat]);
 
   return (
-    <div className="grid gap-4">
+    <div className="grid grid-cols-[minmax(0,1fr)] gap-4">
       {groups.map((g, gi) => (
         <section key={`${g.label}-${gi}`} aria-label={g.label}>
           <h3 className="px-1 pb-1 text-xs font-semibold text-muted-foreground">{g.label}</h3>
@@ -51,7 +51,7 @@ export function TransactionList({
                         {secondary ? secondary(r) : `${TYPE_META[r.type].label}${r.type === "OUTING" ? "" : ` · ${targetLabel(r)}`}`}
                       </span>
                     </span>
-                    <span className="text-right">
+                    <span className="shrink-0 text-right">
                       <span className={cn("tabular block text-sm font-semibold", income && "text-positive")}>
                         {income ? "+" : ""}
                         {money(r.amountCents)}

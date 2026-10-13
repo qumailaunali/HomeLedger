@@ -110,7 +110,7 @@ export function RecordsView({
 
       <section
         aria-label="Filters"
-        className="sticky top-14 z-10 grid gap-3 rounded-2xl border border-border/70 bg-card p-3 shadow-sm sm:p-4"
+        className="sticky top-14 z-10 grid grid-cols-[minmax(0,1fr)] gap-3 rounded-2xl border border-border/70 bg-card p-3 shadow-sm sm:p-4"
       >
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
           <label className="relative flex-1">
@@ -154,10 +154,11 @@ export function RecordsView({
 
         <div className="flex flex-wrap items-center gap-2">
           {variant === "ALL" && (
-            <div className="-mx-1 max-w-full overflow-x-auto px-1">
+            <div className="w-full min-w-0 overflow-x-auto sm:w-auto">
               <Segmented
                 label="Type"
                 size="lg"
+                className="flex w-full sm:inline-flex sm:w-auto"
                 value={type as string}
                 onChange={(v) => set({ type: v === "ALL" ? null : v, category: null, member: null })}
                 options={[
@@ -214,7 +215,7 @@ export function RecordsView({
               <X /> Clear filters
             </Button>
           )}
-          <div className="ml-auto flex items-center gap-3 text-sm">
+          <div className="ml-auto flex flex-wrap items-center justify-end gap-x-3 gap-y-1 text-sm">
             <span className="text-muted-foreground">
               Spent <Money cents={page.spentCents} className="font-semibold text-foreground" />
             </span>
